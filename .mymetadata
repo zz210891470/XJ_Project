@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-module
+  type="WEB"
+  name="zdxm_project"
+  id="myeclipse.1558928408019"
+  context-root="/zdxm_project"
+  j2ee-spec="5.0"
+  archive="zdxm_project.war">
+  <attributes>
+    <attribute name="webrootdir" value="WebRoot" />
+  </attributes>
+</project-module>
+
