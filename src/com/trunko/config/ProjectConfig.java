@@ -1,12 +1,17 @@
 package com.trunko.config;
 
-import com.jfinal.config.*;
+import com.jfinal.config.Constants;
+import com.jfinal.config.Handlers;
+import com.jfinal.config.Interceptors;
+import com.jfinal.config.JFinalConfig;
+import com.jfinal.config.Plugins;
+import com.jfinal.config.Routes;
 import com.jfinal.plugin.activerecord.ActiveRecordPlugin;
 import com.jfinal.plugin.activerecord.CaseInsensitiveContainerFactory;
 import com.jfinal.plugin.c3p0.C3p0Plugin;
 import com.jfinal.template.Engine;
-import com.trunko.filters.CrossOriginInteceptorImpl;
-import com.trunko.filters.ExceptionLogInfo;
+import com.trunko.filters.CrossOriginInterceptor;
+import com.trunko.filters.ExceptionIntoLogInterceptor;
 import com.trunko.web.controller.form.FormController;
 import com.trunko.web.controller.project.ProjectController;
 import com.trunko.web.dao.form.FormModel;
@@ -50,8 +55,9 @@ public  class ProjectConfig extends JFinalConfig {
 
     @Override
     public void configInterceptor(Interceptors interceptors) {
-        interceptors.add(new ExceptionLogInfo());
-        interceptors.add((new CrossOriginInteceptorImpl()));
+        interceptors.add(new ExceptionIntoLogInterceptor() {
+		});
+        interceptors.add((new CrossOriginInterceptor()));
     }
 
     @Override

@@ -19,6 +19,10 @@ public class ProjectModel extends Model<Model> {
 		
 	}
 	
+	public Record getProjectById(int pro_id){
+		return Db.findById("tb_project", "pro_id", pro_id);
+	}
+	
 
     
     

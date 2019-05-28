@@ -9,7 +9,7 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * 跨域拦截器
  */
-public abstract  class CrossOriginInterceptor  implements Interceptor{
+public   class CrossOriginInterceptor  implements Interceptor{
     public void intercept(Invocation inv) {
         CrossOrigin cross = inv.getController().getClass().getAnnotation(CrossOrigin.class);
         if (cross != null) {
@@ -28,10 +28,11 @@ public abstract  class CrossOriginInterceptor  implements Interceptor{
 
     private void handler(HttpServletResponse response) {
         response.setHeader("Access-Control-Allow-Origin", "*");
-        response.setHeader("Access-Control-Allow-Methods", "POST,GET");
+        response.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS,DELETE,PUT");
         response.setHeader("Access-Control-Max-Age", "3600");
         response.setHeader("Access-Control-Allow-Headers",
                 "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+        
     }
 
 }
