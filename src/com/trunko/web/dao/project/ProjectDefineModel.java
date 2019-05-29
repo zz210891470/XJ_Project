@@ -23,4 +23,11 @@ public class ProjectDefineModel extends Model<ProjectDefineModel> {
 		return Db.find("select * from tb_project_define where project_id=?", pro_id);
     	
     }
+    
+    public boolean updateProjectDefine(List<Record>list){
+    	
+		return Db.batchUpdate("tb_project_define","project_define_id", list, list.size()).length == list.size();
+
+    	
+    }
 }

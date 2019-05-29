@@ -1,6 +1,7 @@
 package com.trunko.web.controller.project;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,7 @@ import com.jfinal.core.Controller;
 import com.jfinal.kit.HttpKit;
 import com.jfinal.plugin.activerecord.Record;
 import com.trunko.anoation.CrossOrigin;
+import com.trunko.common.ConstsObject;
 import com.trunko.web.dao.project.ProjectDefineModel;
 import com.trunko.web.dao.project.ProjectModel;
 import com.trunko.web.dao.project.ProjectPlanDefModel;
@@ -29,25 +31,25 @@ public class ProjectController extends Controller {
     public  void saveProject(){
     	Map<String,Object> map = new HashedMap();
 		try {
-
-	    	//String username = getSessionAttr("username");
-	    	//String org_id = getSessionAttr("org_id");
-	       String username = "zhangsan";
-	       String org_id ="abcd";
+         //暂时注释 用户名 和组织ID需要前台传过来
+		/*	String username = getSessionAttr("username");
+	    	String org_id = getSessionAttr("org_id");
+           String username = "zhangsan";
+	       String org_id ="abcd";*/
 	       
 	       Date createDate = new Date();
 	       String formStr = HttpKit.readData(getRequest());
-	       //String formStr = getPara("project_json");
 	       JSONObject jo = JSONObject.fromObject(formStr);
 	       JSONObject project =(JSONObject) jo.get("project");
 	       
 	       // start  根据页面保存的 是否保存草稿还是保存并上报
-	       //  String state = project.getString("state");
-	       String state = "未上报";
-	       String auditState = "未上报";
-	       if(!state.equals(auditState)){
+	       String auditState = ConstsObject.AUDIT_STATE_UNAUDIT;
+	       //页面保存标识 区分草稿 还是 上报保存
+	       String state = project.getString("state");
+	       if("sb".equals(state)){
 	    	   auditState = "待审核";
 	       }
+	       
 	      // end 
 	       
 	       Record project_record = new Record();
@@ -61,8 +63,8 @@ public class ProjectController extends Controller {
 	       set("pro_way", project.get("pro_way")).set("pro_start_year", project.get("pro_start_year")).
 	       set("pro_end_year", project.get("pro_end_year")).set("pro_owner", project.get("pro_owner")).
 	       set("pro_responsibility", project.get("pro_responsibility")).set("pro_type", project.get("pro_type")).
-	       set("pro_username", username).set("pro_createtime", createDate).set("pro_audit_state", auditState).
-	       set("pro_org_id", org_id);
+	       set("pro_username", project.get("pro_username")).set("pro_createtime", createDate).set("pro_audit_state", auditState).
+	       set("pro_org_id", project.get("pro_org_id"));
 	       boolean flag =  ProjectModel.dao.saveProject(project_record);
 	       if(flag){
 	    	   // 开始保存项目自定义信息
@@ -134,13 +136,13 @@ public class ProjectController extends Controller {
 	        sb.append("Exception Type:").append(e.getClass().getName()).append("\n");
 	        sb.append("Exception Details:");
 	        log.error(sb.toString(),e);
-	        map.put("code", 1);
-	        map.put("msg", "项目保存出错");
+	        map.put("code", ConstsObject.ERROR_CODE);
+	        map.put("msg", ConstsObject.SAVE_ERROR_MSG);
 			renderJson(map);
 			return;
 		}
-        map.put("code", 0);
-        map.put("msg", "保存成功");
+        map.put("code", ConstsObject.SUCCESS_CODE);
+        map.put("msg", ConstsObject.SAVE_SUCCESS_MSG);
 		renderJson(map);
     	
     }
@@ -198,13 +200,13 @@ public class ProjectController extends Controller {
     			Record r2 = r.setColumns(m);
     			//结束
     			map.put("project", r2);
-    		    map.put("code", 0);
-       	        map.put("msg", "成功");
+    		    map.put("code", ConstsObject.SUCCESS_CODE);
+       	        map.put("msg", ConstsObject.SEARCH_SUCCESS_MSG);
        		    renderJson(map);
     		}else{
     			
-    		   map.put("code", 1);
-     	       map.put("msg", "查询不到该项目");
+    		   map.put("code", ConstsObject.ERROR_CODE);
+     	       map.put("msg",  ConstsObject.SEARCH_NULL_MSG);
      		   renderJson(map);
     			
     		}
@@ -213,9 +215,9 @@ public class ProjectController extends Controller {
     		
     		
     	}else{
-    		   map.put("code", 1);
-    	       map.put("msg", "查询失败,id为空");
-    		   renderJson(map);
+    		 map.put("code", ConstsObject.ERROR_CODE);
+   	         map.put("msg",  ConstsObject.SEARCH_ERROR_MSG);
+    		 renderJson(map);
     		
     	}
     	
@@ -224,19 +226,139 @@ public class ProjectController extends Controller {
     	
     }
     
-    //编辑项目
+    //编辑项目 前台需传state(如果是 草稿 和管理 里面的编辑可以不传  如果是 保存并上报 则是 更改草稿箱未上报的 状态  需要传状态）
     public void updateProject(){
-    	
+
+    	Map<String,Object> map = new HashedMap();
+		try {
+
+	       String formStr = HttpKit.readData(getRequest());
+	       JSONObject jo = JSONObject.fromObject(formStr);
+	       JSONObject project =(JSONObject) jo.get("project");
+	       
+	       
+	       Record project_record = new Record();
+	       project_record.set("pro_id", project.get("pro_id")).set("pro_name", project.get("pro_name")).
+	       set("pro_year", project.get("pro_year")).set("pro_state", project.get("pro_state")).
+	       set("pro_investment", project.get("pro_investment")).set("pro_content", project.get("pro_content")).
+	       set("pro_province", project.get("pro_province")).set("pro_city", project.get("pro_city")).
+	       set("pro_county", project.get("pro_county")).set("pro_town", project.get("pro_town")).
+	       set("pro_address", project.get("pro_address")).set("pro_location", project.get("pro_location")).
+	       set("pro_industry", project.get("pro_industry")).set("pro_subsectors", project.get("pro_subsectors")).
+	       set("pro_way", project.get("pro_way")).set("pro_start_year", project.get("pro_start_year")).
+	       set("pro_end_year", project.get("pro_end_year")).set("pro_owner", project.get("pro_owner")).
+	       set("pro_responsibility", project.get("pro_responsibility")).set("pro_type", project.get("pro_type"));
+	       
+	       // start  根据页面编辑的 是否保存草稿还是保存并上报
+	       String auditState = ConstsObject.AUDIT_STATE_UNAUDIT;
+	       //页面保存标识 区分草稿 还是 上报保存
+	       String state = project.getString("state");
+	       if("sb".equals(state)){
+	    	   auditState = "待审核";
+	    	   project_record.set("pro_audit_state", auditState);
+	       }
+	       
+	      // end 
+
+	       
+           
+           boolean flag =  ProjectModel.dao.updateProject(project_record);
+	    
+	       if(flag){
+	    	   // 开始更新项目自定义信息
+	    
+	    	  JSONArray ja =(JSONArray) jo.get("project_define");
+	    	  List<Record>list = new ArrayList<Record>();
+	    	   for(int i =0;i<ja.size();i++){
+	    	    	  JSONObject js =(JSONObject) ja.get(i);
+	    	    	  Record r = new Record();	    	    	 
+	    	    	  r.set("field_content", js.get("field_content"));
+	    	    	  r.set("project_define_id",js.get("project_define_id"));
+	    	    	  list.add(r);
+	  
+	    	    }
+	    	   if(list.size()>0){
+	    		   ProjectDefineModel.dao.updateProjectDefine(list);
+
+	    	   }
+	    	   
+	    	  // 结束 保存项目自定义信息
+	    	  // 开始保存 项目年度计划
+	    	   JSONObject plan =(JSONObject) jo.get("project_plan");
+	    	   Record plan_record = new Record();
+
+	    	   //plan_record.set("plan_year", plan.get("plan_year")); //是否需要年度？
+	    	   plan_record.set("plan_id", plan.get("plan_id"));
+	    	   plan_record.set("plan_progress", plan.get("plan_progress"));
+	    	   plan_record.set("plan_investment", plan.get("plan_investment"));
+	    	   plan_record.set("plan_investment1", plan.get("plan_investment1"));
+	    	   plan_record.set("plan_investment2", plan.get("plan_investment2"));
+	    	   plan_record.set("plan_investment3", plan.get("plan_investment3"));
+	    	   plan_record.set("plan_investment4", plan.get("plan_investment4"));
+	    	   plan_record.set("plan_investment5", plan.get("plan_investment5"));
+	    	   plan_record.set("plan_investment6", plan.get("plan_investment6"));
+	    	   plan_record.set("plan_investment7", plan.get("plan_investment7"));
+	    	   plan_record.set("plan_investment8", plan.get("plan_investment8"));
+	    	   plan_record.set("plan_investment9", plan.get("plan_investment9"));
+	    	   plan_record.set("plan_investment10", plan.get("plan_investment10"));
+	    	   plan_record.set("plan_investment11", plan.get("plan_investment11"));
+	    	   plan_record.set("plan_investment12", plan.get("plan_investment12"));
+	    	   plan_record.set("plan_start_month", plan.get("plan_start_month"));
+	    	   plan_record.set("plan_end_month", plan.get("plan_end_month"));
+	    	   boolean save_flag = ProjectPlanModel.dao.updateProjectPlan(plan_record);
+	    	   //保存年度计划结束
+	    	   if(save_flag){
+	    		   JSONArray plan_arr =(JSONArray) jo.get("project_plan_define");
+	    	    	  List<Record>plan_def_list = new ArrayList<Record>();
+	    	    	   for(int i =0;i<plan_arr.size();i++){
+	    	    	    	  JSONObject pd =(JSONObject) plan_arr.get(i);
+	    	    	    	  Record r = new Record();
+	    	    	    	  r.set("field_content", pd.get("field_content"));
+	    	    	    	  r.set("plan_define_id", pd.get("plan_define_id"));
+	    	    	    	  plan_def_list.add(r);
+	    	  
+	    	    	    }
+	    	    	   if(plan_def_list.size()>0){
+	    	    		  ProjectPlanDefModel.dao.updateProjectPlanDef(plan_def_list);
+
+	    	    	   }
+	    		   
+	    	   }
+	    	   
+	       }
+		} catch (Exception e) {
+			
+			//如果不写这段代码 由于 捕获了异常   异常拦截器不会将 错误记录到错误日志中  所以 在这里需要手动 记录到日志
+	        StringBuilder sb =new StringBuilder("\n---Exception Log Begin---\n");
+	        sb.append("Exception Type:").append(e.getClass().getName()).append("\n");
+	        sb.append("Exception Details:");
+	        log.error(sb.toString(),e);
+	        map.put("code", ConstsObject.ERROR_CODE);
+	        map.put("msg", ConstsObject.SAVE_ERROR_MSG);
+			renderJson(map);
+			return;
+		}
+        map.put("code", ConstsObject.SUCCESS_CODE);
+        map.put("msg", ConstsObject.SAVE_SUCCESS_MSG);
+		renderJson(map);
     	
     	
     	
     }
     
-    //查询项目列表
-   public void getProjectDraftList(){
-	   String year = getPara("year");
+    //查询项目列表(草稿，审核，管理等列表）
+   public void getProjectList(){
+	   Calendar cal = Calendar.getInstance();
+	     int year = cal.get(Calendar.YEAR);
+	   String year_str = getPara("year");
 	   String pageNo = getPara("page");
 	   String pageSize = getPara("limit");
+	   String keyword = getPara("pro_name");
+	   String audit_state = getPara("pro_audit_state");
+	   String flag = getPara("flag");
+	   if(year_str != null){
+		   year = Integer.valueOf(year_str);
+	   }
 	   
 
 	   

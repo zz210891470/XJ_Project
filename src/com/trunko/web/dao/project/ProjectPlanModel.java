@@ -22,5 +22,10 @@ public class ProjectPlanModel extends Model<ProjectPlanModel> {
 		
 	}
 	
+	public boolean updateProjectPlan(Record plan){
+		
+		return Db.update("tb_project_plan", "plan_id", plan);
+	}
+	
 	
 }

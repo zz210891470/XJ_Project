@@ -23,6 +23,11 @@ public class ProjectModel extends Model<Model> {
 		return Db.findById("tb_project", "pro_id", pro_id);
 	}
 	
+	public boolean updateProject(Record r){
+		
+		return Db.update("tb_project", "pro_id", r);
+		
+	}
 
     
     

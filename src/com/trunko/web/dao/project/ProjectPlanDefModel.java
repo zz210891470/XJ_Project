@@ -24,5 +24,11 @@ public class ProjectPlanDefModel extends Model<ProjectPlanDefModel>{
 		return Db.find("select * from tb_project_plan_define where plan_id=?", plan_id);
     	
     }
+    
+	public boolean updateProjectPlanDef(List<Record>planlist){
+		
+		return Db.batchUpdate("tb_project_plan_define","plan_define_id", planlist, planlist.size()).length  == planlist.size();
+		
+	}
 
 }
