@@ -30,5 +30,18 @@ public class ProjectPlanDefModel extends Model<ProjectPlanDefModel>{
 		return Db.batchUpdate("tb_project_plan_define","plan_define_id", planlist, planlist.size()).length  == planlist.size();
 		
 	}
+	
+	public  List<Record>getProjectPlanDefineId(int plan_id){
+		
+		return Db.find("select plan_define_id from tb_project_plan where plan_id =? ", plan_id);
+		
+	}
+	
+    public int batchDelProjectDefine(int plan_id){
+    	String sql ="delete from tb_project_plan_define where plan_id = ?";
+    	
+		return Db.delete(sql, plan_id);
+    	
+    }
 
 }

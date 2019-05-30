@@ -27,5 +27,17 @@ public class ProjectPlanModel extends Model<ProjectPlanModel> {
 		return Db.update("tb_project_plan", "plan_id", plan);
 	}
 	
+
+	
+	public boolean delProjectPlan(int plan_id){
+		return Db.deleteById("tb_project_plan", "plan_id", plan_id);
+	}
+	
+	
+	public Record getProjectPlanId(int pro_id){
+		
+		return Db.findFirst("select plan_id from tb_project_plan where project_id =? ", pro_id);
+		
+	}
 	
 }

@@ -20,8 +20,11 @@ public final class ConstsObject {
 	public static final String SEARCH_ERROR_MSG ="查询出错";
 	public static final String SEARCH_SUCCESS_MSG ="查询成功";
 	public static final String SEARCH_NULL_MSG ="查询不到信息 ";
+	public static final String DEL_SUCCESS_MSG ="删除成功";
+	public static final String DEL_ERROR_MSG ="删除失败 ";
 	public static final int PAGE_NO =1;
 	public static final int PAGE_SIZE =15;
+	public static final String DEL_WAY = "update";
 	
 
 

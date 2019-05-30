@@ -30,4 +30,17 @@ public class ProjectDefineModel extends Model<ProjectDefineModel> {
 
     	
     }
+    
+    public List<Record>getProjectDefineId(int pro_id){
+    	
+		return Db.find("select project_define_id from tb_project_define where project_id=?", pro_id);
+    	
+    }
+    
+    public int batchDelProjectDefine(int pro_id){
+    	String sql ="delete from tb_project_define where project_id = ?";
+    	
+		return Db.delete(sql, pro_id) ;
+    	
+    }
 }

@@ -14,6 +14,7 @@ import org.apache.log4j.Logger;
 
 import com.jfinal.core.Controller;
 import com.jfinal.kit.HttpKit;
+import com.jfinal.plugin.activerecord.Page;
 import com.jfinal.plugin.activerecord.Record;
 import com.trunko.anoation.CrossOrigin;
 import com.trunko.common.ConstsObject;
@@ -31,11 +32,6 @@ public class ProjectController extends Controller {
     public  void saveProject(){
     	Map<String,Object> map = new HashedMap();
 		try {
-         //暂时注释 用户名 和组织ID需要前台传过来
-		/*	String username = getSessionAttr("username");
-	    	String org_id = getSessionAttr("org_id");
-           String username = "zhangsan";
-	       String org_id ="abcd";*/
 	       
 	       Date createDate = new Date();
 	       String formStr = HttpKit.readData(getRequest());
@@ -63,6 +59,7 @@ public class ProjectController extends Controller {
 	       set("pro_way", project.get("pro_way")).set("pro_start_year", project.get("pro_start_year")).
 	       set("pro_end_year", project.get("pro_end_year")).set("pro_owner", project.get("pro_owner")).
 	       set("pro_responsibility", project.get("pro_responsibility")).set("pro_type", project.get("pro_type")).
+	      //前台传用户名 组织ID过来
 	       set("pro_username", project.get("pro_username")).set("pro_createtime", createDate).set("pro_audit_state", auditState).
 	       set("pro_org_id", project.get("pro_org_id"));
 	       boolean flag =  ProjectModel.dao.saveProject(project_record);
@@ -346,21 +343,153 @@ public class ProjectController extends Controller {
     	
     }
     
-    //查询项目列表(草稿，审核，管理等列表）
+    //查询项目列表(草稿，管理等列表） 审核列表由国服平台提供
    public void getProjectList(){
-	   Calendar cal = Calendar.getInstance();
-	     int year = cal.get(Calendar.YEAR);
-	   String year_str = getPara("year");
-	   String pageNo = getPara("page");
-	   String pageSize = getPara("limit");
-	   String keyword = getPara("pro_name");
-	   String audit_state = getPara("pro_audit_state");
-	   String flag = getPara("flag");
-	   if(year_str != null){
-		   year = Integer.valueOf(year_str);
+	   Map<String,Object> map = new HashedMap();
+	   String org_id = getPara("org_id");
+	   if(org_id!=null){
+		   
+		   Calendar cal = Calendar.getInstance();
+		   int year = cal.get(Calendar.YEAR);
+		   String year_str = getPara("year");
+		   if(year_str != null){
+			   year = Integer.valueOf(year_str);
+		   }
+		   
+		   int pageNo = ConstsObject.PAGE_NO;
+		   String pageNo_str = getPara("page");
+		   if(pageNo_str != null){
+			   pageNo = Integer.valueOf(pageNo_str);
+		   }
+		   
+		   int pageSize = ConstsObject.PAGE_SIZE;
+		   String pageSize_str = getPara("limit");
+		   if(pageSize_str != null){
+			   pageSize = Integer.valueOf(pageSize_str);
+		   }
+		   String keyword = getPara("pro_name");
+		   if(keyword == null){
+			   keyword = "";
+		   }  
+		   String city = getPara("city");
+		   if(city == null){
+			   city = "";
+		   }
+		   
+		   String county = getPara("county");
+		   if(county == null){
+			   county = "";
+		   }
+		   
+		   //项目类型
+		   String pro_type = getPara("pro_type");
+		   if(pro_type == null){
+			   pro_type = "";
+		   }
+
+		   //大类
+		   String pro_industry = getPara("pro_industry");
+		   if(pro_industry == null){
+			   pro_industry = "";
+		   }
+		   //子类
+		   String pro_subsectors = getPara("pro_subsectors");
+		   if(pro_subsectors == null){
+			   pro_subsectors = "";
+		   }
+		   
+		   String username = getPara("username");
+		   if(username == null){
+			   username = "";
+		   }
+
+		   String flag = getPara("flag");
+		   
+		   Page<Record>page = ProjectModel.dao.getProjectList(pageNo, pageSize, username, keyword, year, city, county, pro_type, pro_industry, pro_subsectors, flag, org_id);
+			map.put("pro_list", page);
+		    map.put("code", ConstsObject.SUCCESS_CODE);
+   	        map.put("msg", ConstsObject.SEARCH_SUCCESS_MSG);
+   		    renderJson(map);
+	   }else{
+		   map.put("code", ConstsObject.ERROR_CODE);
+ 	       map.put("msg",  ConstsObject.SEARCH_ERROR_MSG);
+  		   renderJson(map);
 	   }
 	   
-
+	   
+	   
+   }
+   
+   
+   public void delProject(){
+	   
+	   Map<String,Object> map = new HashedMap();
+	   String pro_id = getPara("pro_id");
+	   String del_way = ConstsObject.DEL_WAY;
+	   if(pro_id!=null){
+		  String d_way =  getPara("del_way");
+		  if(d_way!=null){
+			  del_way =d_way;
+		  }
+		  int pid = Integer.valueOf(pro_id);
+		   //删除项目主表
+		  boolean flag =  ProjectModel.dao.delProject(pid, del_way);
+		  if(flag){
+			 
+			  
+			  if("delete".equals(del_way)){
+				  //删除项目自定义
+				 ProjectDefineModel.dao.batchDelProjectDefine(pid);
+			  
+				  //删除年度计划
+				  Record plan = ProjectPlanModel.dao.getProjectPlanId(pid);
+				  
+				  if(plan!=null){
+					  
+					  int plan_id = plan.getInt("plan_id");
+					  boolean f = ProjectPlanModel.dao.delProjectPlan(plan_id);
+					  
+					  if(f){  
+						  //删除年度计划自定义
+						 ProjectPlanDefModel.dao.batchDelProjectDefine(plan_id);
+  
+					  }
+					  
+				  }
+				  
+			  }
+			
+			  
+			   map.put("code", ConstsObject.SUCCESS_CODE);
+		       map.put("msg",  ConstsObject.DEL_SUCCESS_MSG);
+	 		   renderJson(map); 
+			  
+		  }else{
+			  //删除失败
+			   map.put("code", ConstsObject.ERROR_CODE);
+		       map.put("msg",  ConstsObject.DEL_ERROR_MSG);
+	 		   renderJson(map);
+			  
+		  }
+		   
+		  
+	   }else{
+		   map.put("code", ConstsObject.ERROR_CODE);
+ 	       map.put("msg",  ConstsObject.DEL_ERROR_MSG);
+  		   renderJson(map);
+		   
+	   }
+	   
+   }
+   
+   
+   //用于平台审核流程  更新 项目的 状态 审核通过 或者不通过
+   public void updateStatus(){
+	   String id = getPara("id");
+	   if(id!=null){
+		   String status = getPara("status");
+		   ProjectModel.dao.updateStatus(Integer.valueOf(id), status);
+	   }
 	   
    }
     
