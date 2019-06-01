@@ -486,9 +486,23 @@ public class ProjectController extends Controller {
    //用于平台审核流程  更新 项目的 状态 审核通过 或者不通过
    public void updateStatus(){
 	   String id = getPara("id");
+	   Map<String,Object> map = new HashedMap();
 	   if(id!=null){
 		   String status = getPara("status");
-		   ProjectModel.dao.updateStatus(Integer.valueOf(id), status);
+		  boolean flag = ProjectModel.dao.updateStatus(Integer.valueOf(id), status);
+		  if(flag){
+			    map.put("code", ConstsObject.SUCCESS_CODE);
+		        map.put("msg", ConstsObject.SAVE_SUCCESS_MSG);
+				renderJson(map);
+		  }else{
+			    map.put("code", ConstsObject.ERROR_CODE);
+		        map.put("msg", ConstsObject.SAVE_ERROR_MSG);
+				renderJson(map);
+		  }
+	   }else{
+		    map.put("code", ConstsObject.ERROR_CODE);
+	        map.put("msg", ConstsObject.SAVE_ERROR_MSG);
+			renderJson(map);
 	   }
 	   
    }

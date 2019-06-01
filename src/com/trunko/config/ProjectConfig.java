@@ -13,6 +13,7 @@ import com.jfinal.template.Engine;
 import com.trunko.filters.CrossOriginInterceptor;
 import com.trunko.filters.ExceptionIntoLogInterceptor;
 import com.trunko.web.controller.form.FormController;
+import com.trunko.web.controller.month.MonthController;
 import com.trunko.web.controller.project.ProjectController;
 import com.trunko.web.dao.form.FormModel;
 import com.trunko.web.dao.project.ProjectDefineModel;
@@ -31,7 +32,8 @@ public  class ProjectConfig extends JFinalConfig {
     @Override
     public void configRoute(Routes routes) {
        routes.add("/project", ProjectController.class);
-        routes.add("/forms", FormController.class);
+       routes.add("/forms", FormController.class);
+       routes.add("/month",MonthController.class);
     }
 
     @Override

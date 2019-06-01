@@ -57,11 +57,12 @@ public class FormController extends Controller{
 	
      //获取所有表单
      public  void getForm(){
+    	
     	 Map<String,Object> map = new HashedMap();
     	 String org_id = getPara("org_id");
  		if(org_id!=null && !"".equals(org_id)){
  			List<Record>form_list = FormModel.dao.getForms(org_id, "all");
-            map.put("form_str", form_list);
+            map.put("data", form_list);
 		    map.put("code", ConstsObject.SUCCESS_CODE);
    	        map.put("msg", ConstsObject.SEARCH_SUCCESS_MSG);
    		    renderJson(map);

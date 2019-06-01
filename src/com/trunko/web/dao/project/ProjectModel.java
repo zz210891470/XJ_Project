@@ -113,7 +113,7 @@ public class ProjectModel extends Model<Model> {
 	
 	public boolean updateStatus(int id,String status){
 		String sql = "update tb_project set pro_audit_state = ? where pro_id = ?";
-		return Db.update(sql, status) == 1;
+		return Db.update(sql, status,id) == 1;
 	}
 
     
