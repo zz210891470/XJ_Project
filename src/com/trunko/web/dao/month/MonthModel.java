@@ -40,10 +40,11 @@ public class MonthModel extends Model<MonthModel> {
     public Page<Record>getReportProjectList(int page,int pageSize,String username,String keyword,int year,int month,String org_id){
 		List<Object> list = new ArrayList<Object>();
 
-		String from_sql = "from tb_project p left join tb_month_report m on p.pro_id = m.project_id where  p.pro_year =?  and p.pro_org_id =? and m.report_month=? ";
+		String from_sql = "from tb_project p left join tb_month_report m on p.pro_id = m.project_id and m.report_month=? where  p.pro_year =?  and p.pro_org_id =?  ";
+		list.add(month);
 		list.add(year);
 		list.add(org_id);
-		list.add(month);
+	
 		if(!"".equals(username)){
 			from_sql += " and p.pro_username = ? ";
 			list.add(username);
@@ -51,7 +52,7 @@ public class MonthModel extends Model<MonthModel> {
 		
 		if(!"".equals(keyword)){
 			from_sql += "  and p.pro_name like '%"+keyword+"%' ";
-			list.add(keyword);
+
 		}
 			
 		

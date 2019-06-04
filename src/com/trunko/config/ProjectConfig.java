@@ -6,6 +6,7 @@ import com.jfinal.config.Interceptors;
 import com.jfinal.config.JFinalConfig;
 import com.jfinal.config.Plugins;
 import com.jfinal.config.Routes;
+import com.jfinal.kit.PropKit;
 import com.jfinal.plugin.activerecord.ActiveRecordPlugin;
 import com.jfinal.plugin.activerecord.CaseInsensitiveContainerFactory;
 import com.jfinal.plugin.c3p0.C3p0Plugin;
@@ -15,6 +16,7 @@ import com.trunko.filters.ExceptionIntoLogInterceptor;
 import com.trunko.web.controller.form.FormController;
 import com.trunko.web.controller.month.MonthController;
 import com.trunko.web.controller.project.ProjectController;
+import com.trunko.web.controller.sms.SmsController;
 import com.trunko.web.dao.form.FormModel;
 import com.trunko.web.dao.project.ProjectDefineModel;
 import com.trunko.web.dao.project.ProjectModel;
@@ -26,6 +28,8 @@ public  class ProjectConfig extends JFinalConfig {
     public void configConstant(Constants constants) {
      //   constants.setDevMode(true);
         constants.setEncoding("utf-8");
+   	  //引入配置文件
+  	   PropKit.use("config.properties");
 
     }
 
@@ -34,6 +38,7 @@ public  class ProjectConfig extends JFinalConfig {
        routes.add("/project", ProjectController.class);
        routes.add("/forms", FormController.class);
        routes.add("/month",MonthController.class);
+       routes.add("/sms",SmsController.class);
     }
 
     @Override

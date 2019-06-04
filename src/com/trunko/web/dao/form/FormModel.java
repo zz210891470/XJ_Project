@@ -32,6 +32,13 @@ public class FormModel extends Model<FormModel>{
     	
     }
     
+    public boolean updateForm(Record form){
+    	
+		return Db.update("tb_form_config", "form_id", form);
+    	
+    }
+    
+    
     public boolean updateForms(List<Record>form_list){
     	
 		return Db.batchUpdate("tb_form_config", "form_id", form_list, form_list.size()).length == form_list.size();

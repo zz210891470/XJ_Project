@@ -42,14 +42,13 @@ public class ProjectModel extends Model<Model> {
 		String from_sql = "from tb_project where 1=1 and pro_year =? and pro_org_id =? ";
 		list.add(year);
 		list.add(org_id);
-		if(!"".equals(username)){
+/*		if(!"".equals(username)){
 			from_sql += " and pro_username = ? ";
 			list.add(username);
 		}
-		
+		*/
 		if(!"".equals(keyword)){
 			from_sql += "  and pro_name like '%"+keyword+"%' ";
-			list.add(keyword);
 		}
 		
 		

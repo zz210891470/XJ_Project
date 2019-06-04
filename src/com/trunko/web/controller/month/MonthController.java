@@ -16,6 +16,7 @@ import com.jfinal.core.Controller;
 import com.jfinal.kit.HttpKit;
 import com.jfinal.plugin.activerecord.Page;
 import com.jfinal.plugin.activerecord.Record;
+import com.trunko.anoation.CrossOrigin;
 import com.trunko.common.ConstsObject;
 import com.trunko.web.dao.month.MonthDefineModel;
 import com.trunko.web.dao.month.MonthModel;
@@ -29,6 +30,7 @@ import com.trunko.web.dao.project.ProjectPlanModel;
  * @author Administrator
  *
  */
+@CrossOrigin
 public class MonthController extends Controller {
 	private static final  Logger log = Logger.getLogger(MonthController.class);
 	
@@ -191,7 +193,7 @@ public class MonthController extends Controller {
 				
 				m.setColumns(def);
 			}
-			map.put("month", m);
+			map.put("data", m);
 		    map.put("code", ConstsObject.SUCCESS_CODE);
    	        map.put("msg", ConstsObject.SEARCH_SUCCESS_MSG);
    		    renderJson(map);
@@ -214,7 +216,7 @@ public class MonthController extends Controller {
 		if(pro_id != null){
 			   int month = getParaToInt("month");
 			   List<Record>month_list = MonthModel.dao.getMonthList(Integer.valueOf(pro_id), month);
-			   map.put("month_list", month_list);
+			   map.put("data", month_list);
 			   map.put("code", ConstsObject.SUCCESS_CODE);
 	 	       map.put("msg",  ConstsObject.SEARCH_SUCCESS_MSG);
 	 		   renderJson(map);
@@ -250,10 +252,10 @@ public class MonthController extends Controller {
 			int year = cl.get(Calendar.YEAR);
 			String monthStr =getPara("month");
 			String yearStr = getPara("year");
-			if(monthStr != null){
+			if(monthStr != null && !"".equals(yearStr)){
 				month = Integer.valueOf(monthStr);
 			}
-			if(yearStr != null){
+			if(yearStr != null && !"".equals(yearStr)){
 				year = Integer.valueOf(yearStr);
 			}
 			
@@ -271,7 +273,7 @@ public class MonthController extends Controller {
 				keyword = "";
 			}
 			    Page<Record>page_list = MonthModel.dao.getReportProjectList(page, limit, username, keyword, year, month, org_id);
-				map.put("pro_list", page_list);
+				map.put("data", page_list);
 			    map.put("code", ConstsObject.SUCCESS_CODE);
 	   	        map.put("msg", ConstsObject.SEARCH_SUCCESS_MSG);
 	   		    renderJson(map);

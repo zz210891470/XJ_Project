@@ -79,28 +79,36 @@ public class FormController extends Controller{
     	 
       Map<String,Object> map = new HashedMap();
       String form =  HttpKit.readData(getRequest());
-      JSONObject jo = JSONObject.fromObject(form);
-      JSONArray ja =(JSONArray) jo.get("form_str");
-      List<Record>form_list = new ArrayList<Record>();
-      for(int i =0;i < ja.size();i++){
-    	  Record r = new Record();
-    	  JSONObject obj = (JSONObject)ja.get(i);
-    	  r.set("form_id", obj.get("form_id"));
-    	  r.set("form_title", obj.get("form_title"));
-    	  r.set("form_desc", obj.get("form_desc"));
-    	  r.set("form_data", obj.get("form_data"));
-    	 form_list.add(r);
-      }
-       boolean flag = FormModel.dao.updateForms(form_list);
-       if(flag){
-    	   map.put("code", ConstsObject.SUCCESS_CODE);
-		   map.put("msg", ConstsObject.SAVE_SUCCESS_MSG);
-		   renderJson(map);
-       }else{
+/*      System.out.println(form);
+      renderNull();*/
+      if(form!=null&&!"".equals(form)){
+          JSONObject jo = JSONObject.fromObject(form);
+          System.out.println(form);
+        	  Record r = new Record();
+        	  r.set("form_id",jo.get("form_id"));
+        	  r.set("form_data", jo.get("form_data"));
+        	 
+           boolean flag = FormModel.dao.updateForm(r);
+           if(flag){
+        	   //更新成功返回最新表单  (返回单个 还是集合？)
+        	   String org_id = (String) jo.get("org_id"); 
+        	   List<Record>form_list = FormModel.dao.getForms(org_id, "all");
+        	   
+               map.put("data", form_list);
+        	   map.put("code", ConstsObject.SUCCESS_CODE);
+    		   map.put("msg", ConstsObject.UPDATE_SUCCESS_MSG);
+    		   renderJson(map);
+           }else{
+        	   map.put("code", ConstsObject.ERROR_CODE);
+    		   map.put("msg", ConstsObject.UPDATE_ERROR_MSG);
+    		   renderJson(map);
+           }
+      }else{
     	   map.put("code", ConstsObject.ERROR_CODE);
-		   map.put("msg", ConstsObject.SAVE_ERROR_MSG);
+		   map.put("msg", ConstsObject.UPDATE_ERROR_MSG);
 		   renderJson(map);
-       }
+      }
+
     
     	 
      }
