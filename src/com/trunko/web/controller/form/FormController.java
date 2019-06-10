@@ -26,6 +26,7 @@ public class FormController extends Controller{
 	public void initForm(){
 		Map<String,Object> map = new HashedMap();
 		String org_id = getPara("org_id");
+		System.out.println("组织ID:"+org_id);
 		if(org_id!=null && !"".equals(org_id)){
 			List<Record>initList = FormModel.dao.getForms(ConstsObject.INIT_ORG_ID,"");
 			for(int i = 0; i < initList.size(); i ++){
@@ -60,6 +61,7 @@ public class FormController extends Controller{
     	
     	 Map<String,Object> map = new HashedMap();
     	 String org_id = getPara("org_id");
+    	 System.out.println("组织ID:"+org_id);
  		if(org_id!=null && !"".equals(org_id)){
  			List<Record>form_list = FormModel.dao.getForms(org_id, "all");
             map.put("data", form_list);

@@ -76,15 +76,13 @@ public class SmsController extends Controller{
 								 //保存接收用户
 								 SmsUserModel.dao.saveReceiveUsers(user_list); 
 							 }
-						 }else{
-							 
 						 }
 						 map.put("code", ConstsObject.SUCCESS_CODE);
-			    		 map.put("msg", ConstsObject.SAVE_SUCCESS_MSG);
+			    		 map.put("msg", ConstsObject.SEND_SUCCESS_MSG);
 			    		 renderJson(map);
 					 }else{
 						  map.put("code", ConstsObject.ERROR_CODE);
-			    		  map.put("msg", ConstsObject.SAVE_ERROR_MSG);
+			    		  map.put("msg", ConstsObject.SEND_ERROR_MSG);
 			    		  renderJson(map);
 					 }
 
@@ -95,7 +93,7 @@ public class SmsController extends Controller{
 			        sb.append("Exception Details:");
 			        log.error(sb.toString(),e);
 			        map.put("code", ConstsObject.ERROR_CODE);
-			        map.put("msg", ConstsObject.SAVE_ERROR_MSG);
+			        map.put("msg", ConstsObject.SEND_ERROR_MSG);
 					renderJson(map);
 					return;
 					
@@ -141,7 +139,7 @@ public class SmsController extends Controller{
 	//短信详情
 	public void getMsgDetail(){
 	    Map<String,Object> map = new HashedMap();
-		String ms_id = getPara("ms_id");
+		String ms_id = getPara("msg_id");
 		if(ms_id != null&&!"".equals(ms_id)){
 		    int msg_id = Integer.valueOf(ms_id);
 		    Record msg = SmsModel.dao.getMsg(msg_id);
@@ -166,7 +164,7 @@ public class SmsController extends Controller{
 	//删除短信
 	public void delMsg(){
 		Map<String,Object> map = new HashedMap();
-		String ms_id = getPara("ms_id");
+		String ms_id = getPara("msg_id");
 		if(ms_id != null&&!"".equals(ms_id)){
 			int msg_id = Integer.valueOf(ms_id);
 			boolean flag = SmsModel.dao.delMsg(msg_id);

@@ -35,7 +35,7 @@ public class MonthController extends Controller {
 	private static final  Logger log = Logger.getLogger(MonthController.class);
 	
 	//保存月报
-	public void saveMonth(){
+	public void saveReport(){
 		Map<String,Object> map = new HashedMap();
 		try {
 	       
@@ -48,7 +48,7 @@ public class MonthController extends Controller {
 	       // start  根据页面保存的 是否保存草稿还是保存并上报
 	       String auditState = ConstsObject.AUDIT_STATE_UNAUDIT;
 	       //页面保存标识 区分草稿 还是 上报保存
-	       String state = month.getString("state");
+	       String state = jo.getString("state");
 	       if("sb".equals(state)){
 	    	   auditState = "待审核";
 	       }
@@ -59,10 +59,10 @@ public class MonthController extends Controller {
 	       set("report_year", month.get("report_year")).set("report_month", month.get("report_month")).
 	       set("report_month_complete", month.get("report_month_complete")).set("report_year_complete", month.get("report_year_complete")).
 	       set("report_total_complete", month.get("report_total_complete")).set("report_year_percent", month.get("report_year_percent")).
-	       set("report_percent_all", month.get("report_percent_all")).set("report_progress", month.get("report_progress")).
+	       set("report_all_percent", month.get("report_all_percent")).set("report_progress", month.get("report_progress")).
 	       set("report_question", month.get("report_question")).set("report_plan", month.get("report_plan")).
 	     //前台传用户名 组织ID过来
-	       set("report_username", month.get("report_username")).set("report_createtime", createDate).set("report_state", auditState);
+	       set("report_username", jo.get("username")).set("report_createtime", createDate).set("report_state", auditState);
 
 	       boolean flag =  MonthModel.dao.saveMonth(month_record);
 	       if(flag){
@@ -104,7 +104,7 @@ public class MonthController extends Controller {
 	}
 	
 	//更新月报
-	public void updateMonth(){
+	public void updateReport(){
 		
 		Map<String,Object> map = new HashedMap();
 		try {
@@ -121,11 +121,11 @@ public class MonthController extends Controller {
 	       set("report_year", month.get("report_year")).set("report_month", month.get("report_month")).
 	       set("report_month_complete", month.get("report_month_complete")).set("report_year_complete", month.get("report_year_complete")).
 	       set("report_total_complete", month.get("report_total_complete")).set("report_year_percent", month.get("report_year_percent")).
-	       set("report_percent_all", month.get("report_percent_all")).set("report_progress", month.get("report_progress")).
+	       set("report_all_percent", month.get("report_all_percent")).set("report_progress", month.get("report_progress")).
 	       set("report_question", month.get("report_question")).set("report_plan", month.get("report_plan"));
 	       // start  根据页面保存的 是否保存草稿还是保存并上报
 	       //页面保存标识 区分草稿 还是 上报保存
-	       String state = month.getString("state");
+	       String state = jo.getString("state");
 	       String auditState = ConstsObject.AUDIT_STATE_UNAUDIT;
 	       if("sb".equals(state)){
 	    	   auditState = "待审核";
@@ -151,6 +151,11 @@ public class MonthController extends Controller {
 
 	    	   }
 	    	   
+	    	   if("mg".equals(state)){
+	    		   //如果是管理列表中的编辑  需要更新当前月份后面所有月报的数据
+	    		   
+	    		   
+	    	   }
 	    	   
 	       }
 		} catch (Exception e) {
@@ -174,16 +179,16 @@ public class MonthController extends Controller {
 	
 	
 	//获取月报详情
-	public void getMonth(){
+	public void getReport(){
+		
 		Map<String,Object> map = new HashedMap();
-		String project_id = getPara("project_id");
-		String month = getPara("month");
-		if(project_id!=null&&!"".equals(project_id)&&month!=null&&!"".equals(month)){
+		String report_id = getPara("report_id");
+		if(report_id!=null&&!"".equals(report_id)){
 			//获取月报详情
-			Record m = MonthModel.dao.getMonthDetail(Integer.valueOf(project_id),Integer.valueOf(month));
+			Record m = MonthModel.dao.getMonthDetail(Integer.valueOf(report_id));
 			if(m!=null){
-				int month_id = m.getInt("report_id");
-				List<Record>deflist = MonthDefineModel.dao.getMonthDefList(month_id);
+				
+				List<Record>deflist = MonthDefineModel.dao.getMonthDefList(Integer.valueOf(report_id));
 				Record def = new Record();
 				for (int i = 0; i < deflist.size(); i++) {
 					
@@ -209,13 +214,13 @@ public class MonthController extends Controller {
 	}
 	
 	//获取月报列表 单个项目对应月报列表
-	public void getMonthList(){
+	public void getReportList(){
 		
 		Map<String,Object> map = new HashedMap();
 		String pro_id = getPara("project_id");
 		if(pro_id != null){
-			   int month = getParaToInt("month");
-			   List<Record>month_list = MonthModel.dao.getMonthList(Integer.valueOf(pro_id), month);
+			
+			   List<Record>month_list = MonthModel.dao.getMonthList(Integer.valueOf(pro_id));
 			   map.put("data", month_list);
 			   map.put("code", ConstsObject.SUCCESS_CODE);
 	 	       map.put("msg",  ConstsObject.SEARCH_SUCCESS_MSG);
@@ -285,8 +290,62 @@ public class MonthController extends Controller {
 		
 	}
 	
+	
+	//获取月报管理列表
+	public void getManageReportMonthList(){
+		
+	    Map<String,Object> map = new HashedMap();
+		String org_id = getPara("org_id");
+		if(org_id == null||"".equals(org_id)){
+			  map.put("code", ConstsObject.ERROR_CODE);
+	 	      map.put("msg",  ConstsObject.SEARCH_ERROR_MSG);
+	  		  renderJson(map);
+		}else{
+		
+			int page = ConstsObject.PAGE_NO;
+			int limit =ConstsObject.PAGE_SIZE;
+
+			
+			Calendar cl = Calendar.getInstance();
+			int month = cl.get(Calendar.MONTH)+1;
+			int year = cl.get(Calendar.YEAR);
+			String monthStr =getPara("month");
+			String yearStr = getPara("year");
+			if(monthStr != null && !"".equals(yearStr)){
+				month = Integer.valueOf(monthStr);
+			}
+			if(yearStr != null && !"".equals(yearStr)){
+				year = Integer.valueOf(yearStr);
+			}
+			
+			String pageStr = getPara("page");
+			String limitStr= getPara("limit");
+			if(pageStr!=null){
+				page = Integer.valueOf(pageStr);
+			}
+			
+			if(limitStr!=null){
+				limit = Integer.valueOf(limitStr);
+			}
+			String keyword = getPara("keyword");
+			if(keyword == null){
+				keyword = "";
+			}
+			    Page<Record>page_list = MonthModel.dao.getManageReportList(page, limit, keyword, year, month, org_id);
+				map.put("data", page_list);
+			    map.put("code", ConstsObject.SUCCESS_CODE);
+	   	        map.put("msg", ConstsObject.SEARCH_SUCCESS_MSG);
+	   		    renderJson(map);
+		}
+
+		
+		
+		
+		
+	}
+	
 	//删除月报
-	public void delMonth(){
+	public void delReport(){
 		 Map<String,Object> map = new HashedMap();
 		String month_id = getPara("month_id");
 		if(month_id!=null && !"".equals(month_id)){

@@ -84,7 +84,7 @@ public class ProjectModel extends Model<Model> {
 		
 		}else if("reported".equals(flag)){
 			//当前用户已上报项目
-			from_sql += " and pro_username = ? and pro_audit_state !='未上报'  ";
+			from_sql += " and pro_username = ? and pro_audit_state !='未上报' and pro_audit_state !='已删除' ";
 			list.add(username);
 			
 		}else{

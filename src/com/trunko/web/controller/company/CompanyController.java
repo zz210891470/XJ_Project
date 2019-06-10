@@ -34,8 +34,8 @@ public class CompanyController extends Controller {
 	     
 	       String formStr = HttpKit.readData(getRequest());
 	       JSONObject jo = JSONObject.fromObject(formStr);
-	       JSONObject company =(JSONObject) jo.get("company");
-	       String company_name = company.getString("comp_name");
+	     
+	       String company_name = jo.getString("comp_name");
 	       boolean if_exist = CompanyModel.dao.checkIfexist(company_name, "");
 	        if(if_exist){
 	        	//该名称已存在
@@ -47,13 +47,11 @@ public class CompanyController extends Controller {
 	        }else{
 	        	
 	        	 Record comp = new Record();
-	        	 comp.set("comp_lawman",jo.get("comp_lawman")).set("comp_province", jo.get("comp_province")).
-	        	 set("comp_city", jo.get("comp_city")).set("comp_reg_money", jo.get("comp_reg_money")).
-	        	 set("comp_reg_time", jo.get("comp_reg_time")).set("comp_investment", jo.get("comp_investment")).
+	        	 comp.set("comp_name",jo.get("comp_name")).set("comp_lawman",jo.get("comp_lawman")).set("comp_reg_money", jo.get("comp_reg_money")).
+	        	 set("comp_reg_time", jo.get("comp_reg_time")).set("comp_number", jo.get("comp_number")).
 	        	 set("comp_type", jo.get("comp_type")).set("comp_address", jo.get("comp_address")).
-	        	 set("comp_in_time", jo.get("comp_in_time")).set("comp_contact", jo.get("comp_contact")).
-	        	 set("comp_phone", jo.get("comp_phone")).set("comp_numer", jo.get("comp_numer")).
-	        	 set("comp_min_number", jo.get("comp_min_number")).set("comp_remark", jo.get("comp_remark"));
+	        	 set("comp_range", jo.get("comp_range")).set("comp_contact", jo.get("comp_contact")).
+	        	 set("comp_phone", jo.get("comp_phone")).set("comp_introduction", jo.get("comp_introduction"));
 	        	 
 	        	 boolean flag = CompanyModel.dao.saveCompany(comp);
 	        	 if(flag){
@@ -113,6 +111,103 @@ public class CompanyController extends Controller {
 		
 	 }
 	 
+	 //获取详情
+	 public void getCompany(){
+		 
+		 Map<String,Object> map = new HashedMap();
+		 String comp_id = getPara("comp_id");
+		 if(!"".equals(comp_id)&&comp_id!=null){
+			 
+			 Record com =  CompanyModel.dao.getCompany(Integer.valueOf(comp_id));
+		     map.put("data", com);
+		     map.put("code", ConstsObject.SUCCESS_CODE);
+   	         map.put("msg", ConstsObject.SEARCH_SUCCESS_MSG);
+   		     renderJson(map);
+			 
+		 }else{
+		
+			     map.put("code", ConstsObject.ERROR_CODE);
+	   	         map.put("msg", "无该公司信息");
+	   		     renderJson(map);
+			 
+		 }
+		 
+		 
+	 }
+	 
+		//更新公司
+		public void updateCompany(){
+		       Map<String,Object> map = new HashedMap();	     
+		       String formStr = HttpKit.readData(getRequest());
+		       JSONObject jo = JSONObject.fromObject(formStr);
+		       String comp_id = jo.getString("comp_id");
+		       if(comp_id!=null&&!"".equals(comp_id)){
+			       String company_name = jo.getString("comp_name");
+			       boolean if_exist = CompanyModel.dao.checkIfexist(company_name, comp_id);
+			        if(if_exist){
+			        	//该名称已存在
+				        map.put("code", ConstsObject.ERROR_CODE);
+				        map.put("msg", "名称已存在");
+						renderJson(map);
+						return;
+			        	
+			        }else{
+			        	
+			        	 Record comp = new Record();
+			        	 comp.set("comp_name",jo.get("comp_name")).set("comp_lawman",jo.get("comp_lawman")).set("comp_reg_money", jo.get("comp_reg_money")).
+			        	 set("comp_reg_time", jo.get("comp_reg_time")).set("comp_number", jo.get("comp_number")).
+			        	 set("comp_type", jo.get("comp_type")).set("comp_address", jo.get("comp_address")).
+			        	 set("comp_range", jo.get("comp_range")).set("comp_contact", jo.get("comp_contact")).
+			        	 set("comp_phone", jo.get("comp_phone")).set("comp_introduction", jo.get("comp_introduction")) .set("comp_id", comp_id);;
+			        	 
+			        	 boolean flag = CompanyModel.dao.updateCompany(comp);
+			        	 if(flag){
+			        		map.put("code", ConstsObject.SUCCESS_CODE);
+			  		        map.put("msg", ConstsObject.UPDATE_SUCCESS_MSG);
+			  				renderJson(map);
+			        	 }else{
+			        	    map.put("code", ConstsObject.ERROR_CODE);
+			  		        map.put("msg", ConstsObject.UPDATE_ERROR_MSG);
+			  				renderJson(map);
+			        	 }
+			        	
+			        }
+		       }else{
+		    	    map.put("code", ConstsObject.ERROR_CODE);
+	  		        map.put("msg", ConstsObject.UPDATE_ERROR_MSG);
+	  				renderJson(map);
+		    	   
+		       }
+
+		       
+			 
+			
+		}
+		
+		//删除公司
+		public void delCompany(){
+		 Map<String,Object> map = new HashedMap();
+		  String comp_id = getPara("comp_id");
+	       if(comp_id!=null&&!"".equals(comp_id)){
+	    	   
+	    	   boolean flag = CompanyModel.dao.delCompany(Integer.valueOf(comp_id));
+	    	   if(flag){
+	    		    map.put("code", ConstsObject.ERROR_CODE);
+	 		        map.put("msg", ConstsObject.DEL_SUCCESS_MSG);
+	 				renderJson(map);
+	    	   }else{
+	    		   map.put("code", ConstsObject.ERROR_CODE);
+	 		       map.put("msg", ConstsObject.DEL_ERROR_MSG);
+	 			   renderJson(map);
+	    	   }
+	       }else{
+	    	   
+	    	    map.put("code", ConstsObject.ERROR_CODE);
+ 		        map.put("msg", ConstsObject.DEL_ERROR_MSG);
+ 				renderJson(map);
+	       }
+			
+		}
 	 
 
 }

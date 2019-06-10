@@ -13,7 +13,9 @@ import com.jfinal.plugin.c3p0.C3p0Plugin;
 import com.jfinal.template.Engine;
 import com.trunko.filters.CrossOriginInterceptor;
 import com.trunko.filters.ExceptionIntoLogInterceptor;
+import com.trunko.web.controller.company.CompanyController;
 import com.trunko.web.controller.form.FormController;
+import com.trunko.web.controller.info.InfoController;
 import com.trunko.web.controller.month.MonthController;
 import com.trunko.web.controller.project.ProjectController;
 import com.trunko.web.controller.sms.SmsController;
@@ -39,6 +41,8 @@ public  class ProjectConfig extends JFinalConfig {
        routes.add("/forms", FormController.class);
        routes.add("/month",MonthController.class);
        routes.add("/sms",SmsController.class);
+       routes.add("/info",InfoController.class);
+       routes.add("/company",CompanyController.class);
     }
 
     @Override

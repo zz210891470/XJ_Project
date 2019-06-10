@@ -28,10 +28,10 @@ public class MonthModel extends Model<MonthModel> {
 	}
 	
 	
-    public List<Record>getMonthList(int pro_id,int month){
+    public List<Record>getMonthList(int pro_id){
     
     	
-		return Db.find("select * from tb_month_report m left join  tb_project p on p.pro_id = m.project_id where p.pro_id=? and m.report_month=? order by p.pro_year asc",pro_id,month);
+		return Db.find("select * from tb_month_report m left join  tb_project p on p.pro_id = m.project_id where p.pro_id=?  order by p.pro_year asc",pro_id);
     	
     }
     
@@ -40,7 +40,7 @@ public class MonthModel extends Model<MonthModel> {
     public Page<Record>getReportProjectList(int page,int pageSize,String username,String keyword,int year,int month,String org_id){
 		List<Object> list = new ArrayList<Object>();
 
-		String from_sql = "from tb_project p left join tb_month_report m on p.pro_id = m.project_id and m.report_month=? where  p.pro_year =?  and p.pro_org_id =?  ";
+		String from_sql = "from tb_project p left join tb_month_report m on p.pro_id = m.project_id and m.report_month=? left join tb_project_plan n on n.project_id = p.pro_id  where  p.pro_year =?  and p.pro_org_id =?  ";
 		list.add(month);
 		list.add(year);
 		list.add(org_id);
@@ -58,15 +58,39 @@ public class MonthModel extends Model<MonthModel> {
 		
 		from_sql +=" and p.pro_audit_state ='审核通过' order by p.pro_id desc";
 		
-		return  Db.paginate(page, pageSize, "select p.pro_id,p.pro_name,p.pro_year,m.report_month_complete,m.report_year_complete,m.report_createtime,m.report_state ", from_sql, list.toArray());
+		return  Db.paginate(page, pageSize, "select p.pro_id,p.pro_name,p.pro_year,m.report_id,m.project_id,m.report_month_complete,m.report_year_complete,m.report_createtime,m.report_state,n.plan_investment,p.pro_investment,m.report_year_complete ", from_sql, list.toArray());
 
 
 		
 	}
     
-    public Record getMonthDetail(int project_id,int month){
-    	String sql = "select  * from tb_project p left join  tb_month_report m  on p.pro_id = m.project_id  and  m.report_month=? where p.pro_id=? ";
-		return Db.findFirst(sql,month,project_id);
+    
+    public Page<Record>getManageReportList(int page,int pageSize,String keyword,int year,int month,String org_id){
+		List<Object> list = new ArrayList<Object>();
+
+		String from_sql = "from tb_project p left join tb_month_report m on p.pro_id = m.project_id and m.report_month=?   where  p.pro_year =?  and p.pro_org_id =?  ";
+		list.add(month);
+		list.add(year);
+		list.add(org_id);
+	
+
+		if(!"".equals(keyword)){
+			from_sql += "  and p.pro_name like '%"+keyword+"%' ";
+
+		}
+			
+		
+		from_sql +=" and p.pro_audit_state ='审核通过' order by p.pro_id desc";
+		
+		return  Db.paginate(page, pageSize, "select p.pro_id,p.pro_name,p.pro_year,m.report_month_complete,m.report_year_complete,m.report_createtime,m.report_state,p.pro_investment,m.report_year_complete ", from_sql, list.toArray());
+		
+	}
+    
+    
+    
+    public Record getMonthDetail(int report_id){
+    	String sql = "select  * from  tb_month_report where report_id=? ";
+		return Db.findFirst(sql,report_id);
     }
 	
     
