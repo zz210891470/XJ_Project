@@ -58,7 +58,7 @@ public class MonthModel extends Model<MonthModel> {
 		
 		from_sql +=" and p.pro_audit_state ='审核通过' order by p.pro_id desc";
 		
-		return  Db.paginate(page, pageSize, "select p.pro_id,p.pro_name,p.pro_year,m.report_id,m.project_id,m.report_month_complete,m.report_year_complete,m.report_createtime,m.report_state,n.plan_investment,p.pro_investment,m.report_year_complete ", from_sql, list.toArray());
+		return  Db.paginate(page, pageSize, "select p.pro_id,p.pro_name,p.pro_year,m.report_id,m.project_id,m.report_month_complete,m.report_year_complete,m.report_createtime,m.report_state,m.report_year_percent,m.report_all_percent,n.plan_investment,p.pro_investment,m.report_year_complete ", from_sql, list.toArray());
 
 
 		
@@ -86,6 +86,27 @@ public class MonthModel extends Model<MonthModel> {
 		
 	}
     
+    public Page<Record>getAuditReportList(int page,int pageSize,String keyword,int year,int month,String org_id,String auditUser){
+		List<Object> list = new ArrayList<Object>();
+
+		String from_sql = "from tb_project p left join tb_month_report m on p.pro_id = m.project_id and m.report_month=? left join tb_project_plan n on  p.pro_id = n.project_id  where  p.pro_year =?  and p.pro_org_id =?  ";
+		list.add(month);
+		list.add(year);
+		list.add(org_id);
+	
+
+		if(!"".equals(keyword)){
+			from_sql += "  and p.pro_name like '%"+keyword+"%' ";
+
+		}
+			
+		
+		from_sql +=" and p.pro_audit_state ='审核通过' and m.report_state ='待审核' and report_audit_user =? order by p.pro_id desc";
+		list.add(auditUser);
+		return  Db.paginate(page, pageSize, "select p.pro_id,p.pro_name,p.pro_year,m.report_id,m.report_proc_id,m.report_proc_inst_id,m.report_month_complete,m.report_year_complete,m.report_createtime,m.report_state,p.pro_investment,m.report_year_complete,n.plan_investment,p.pro_investment ", from_sql, list.toArray());
+		
+	}
+    
     
     
     public Record getMonthDetail(int report_id){
@@ -103,6 +124,11 @@ public class MonthModel extends Model<MonthModel> {
     public boolean updateStatus(int month_id,String status){
 		return Db.update("update tb_month_report set report_state =? where report_id=? ",status, month_id) == 1;
     	
+    }
+    
+    public Record getMonthAndProByMonthId(int monthid){
+    	String sql = "select * from tb_month_report m left join tb_project p on m.project_id = p.pro_id where m.report_id =?";
+		return Db.findFirst(sql, monthid);
     }
 	
 

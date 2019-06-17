@@ -1,5 +1,6 @@
 package com.trunko.web.controller.month;
 
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -18,6 +19,8 @@ import com.jfinal.plugin.activerecord.Page;
 import com.jfinal.plugin.activerecord.Record;
 import com.trunko.anoation.CrossOrigin;
 import com.trunko.common.ConstsObject;
+import com.trunko.utils.SmsClientAccessTool;
+import com.trunko.web.dao.auditlog.AuditModel;
 import com.trunko.web.dao.month.MonthDefineModel;
 import com.trunko.web.dao.month.MonthModel;
 import com.trunko.web.dao.project.ProjectDefineModel;
@@ -84,6 +87,34 @@ public class MonthController extends Controller {
 
 	    	   }
 	    	   
+	    	      if("待审核".equals(auditState)){
+	    	    	  Record pro = ProjectModel.dao.getProjectById(month.getInt("project_id"));
+	    	    	  String industry = pro.getStr("pro_industry");
+	    	    	  //启动平台审核流程
+	    	    	  String returnResult = SmsClientAccessTool.getInstance().doAccessHTTPGet("http://192.168.1.15:8082/fast/public/api/Acapi/acMethod?ackey=c322d0339-98ea-4045-94d6-94b7cbfe3ba2&jlid="+mon_id+
+	   	    			  
+	   	    			   "&userName="+URLEncoder.encode(jo.getString("username"), "UTF-8")+
+	   	    			   "&condition="+URLEncoder.encode(industry, "UTF-8")+
+	   	    			   "&Method=appAc/qdAc&org_id="+pro.getStr("pro_org_id")+
+	   	    			   "&ident=month", "UTF-8");
+	    	    	  System.out.println("返回结果:"+returnResult);
+	    	    	  JSONObject result = JSONObject.fromObject(returnResult);
+	    	    	  String proc_id = result.getString("ID_");
+	    	    	  String proc_inst_id = result.getString("PROC_INST_ID_");
+	    	    	  String audit_user = result.getString("ASSIGNEE_");
+	   	    	      Record p = new Record();
+	   	    	      p.set("report_id", mon_id).set("report_proc_id", proc_id).set("report_proc_inst_id", proc_inst_id).set("report_audit_user", audit_user);
+	   	    	      boolean f =  MonthModel.dao.updateMonth(p);
+	   	    	       
+	   	    	      if(f){
+	    	    		  Record audit_log  =  new Record();
+	    	    		  audit_log.set("monId", mon_id).set("auditType", 2).set("auditResult", "启动审核 流程,等待"+audit_user+"审核");
+	    	    		  AuditModel.dao.saveAudit(audit_log);
+	    	    		  
+	    	    	  }
+	    	    	  
+	    	      }
+	    	   
 	    	   
 	       }
 		} catch (Exception e) {
@@ -117,7 +148,8 @@ public class MonthController extends Controller {
 
 	       
 	       Record month_record = new Record();
-	       month_record.set("report_id", month.get("report_id")).
+	       int mon_id =  month.getInt("report_id");
+	       month_record.set("report_id",mon_id).
 	       set("report_year", month.get("report_year")).set("report_month", month.get("report_month")).
 	       set("report_month_complete", month.get("report_month_complete")).set("report_year_complete", month.get("report_year_complete")).
 	       set("report_total_complete", month.get("report_total_complete")).set("report_year_percent", month.get("report_year_percent")).
@@ -154,8 +186,33 @@ public class MonthController extends Controller {
 	    	   if("mg".equals(state)){
 	    		   //如果是管理列表中的编辑  需要更新当前月份后面所有月报的数据
 	    		   
-	    		   
 	    	   }
+	    	   
+	    	      if("待审核".equals(auditState)){
+	    	    	  Record pro = MonthModel.dao.getMonthAndProByMonthId(mon_id);
+	    	    	  String industry = pro.getStr("pro_industry");
+	    	    	  //启动平台审核流程
+	    	    	  String returnResult = SmsClientAccessTool.getInstance().doAccessHTTPGet("http://192.168.1.15:8082/fast/public/api/Acapi/acMethod?ackey=c322d0339-98ea-4045-94d6-94b7cbfe3ba2&jlid="+mon_id+
+	   	    			  
+	   	    			   "&userName="+URLEncoder.encode(pro.getStr("report_username"), "UTF-8")+
+	   	    			   "&condition="+URLEncoder.encode(industry, "UTF-8")+
+	   	    			   "&Method=appAc/qdAc&org_id="+pro.getStr("pro_org_id")+
+	   	    			   "&ident=month", "UTF-8");
+	    	    	  System.out.println("返回结果:"+returnResult);
+	    	    	  JSONObject result = JSONObject.fromObject(returnResult);
+	    	    	  String proc_id = result.getString("ID_");
+	    	    	  String proc_inst_id = result.getString("PROC_INST_ID_");
+	    	    	  String audit_user = result.getString("ASSIGNEE_");
+	   	    	      Record p = new Record();
+	   	    	      p.set("report_id", mon_id).set("report_proc_id", proc_id).set("report_proc_inst_id", proc_inst_id).set("report_audit_user", audit_user);
+	    	    	  boolean f =  MonthModel.dao.updateMonth(p);
+	    	  	      if(f){
+	    	    		  Record audit_log  =  new Record();
+	    	    		  audit_log.set("monId", mon_id).set("auditType", 2).set("auditResult", "启动审核 流程,等待"+audit_user+"审核");
+	    	    		  AuditModel.dao.saveAudit(audit_log);
+	    	    		  
+	    	    	  }
+	    	      }
 	    	   
 	       }
 		} catch (Exception e) {
@@ -257,7 +314,7 @@ public class MonthController extends Controller {
 			int year = cl.get(Calendar.YEAR);
 			String monthStr =getPara("month");
 			String yearStr = getPara("year");
-			if(monthStr != null && !"".equals(yearStr)){
+			if(monthStr != null &&  !"".equals(monthStr) &&!"".equals(yearStr)){
 				month = Integer.valueOf(monthStr);
 			}
 			if(yearStr != null && !"".equals(yearStr)){
@@ -286,9 +343,11 @@ public class MonthController extends Controller {
 
 		
 		
-		
-		
 	}
+	
+	
+
+	
 	
 	
 	//获取月报管理列表
@@ -338,16 +397,69 @@ public class MonthController extends Controller {
 	   		    renderJson(map);
 		}
 
-		
-		
-		
+
 		
 	}
+	
+	//获取待审核列表
+	
+	public void getAuditReportList(){
+		 Map<String,Object> map = new HashedMap();
+			String org_id = getPara("org_id");
+			if(org_id == null||"".equals(org_id)){
+				  map.put("code", ConstsObject.ERROR_CODE);
+		 	      map.put("msg",  ConstsObject.SEARCH_ERROR_MSG);
+		  		  renderJson(map);
+			}else{
+			
+				int page = ConstsObject.PAGE_NO;
+				int limit =ConstsObject.PAGE_SIZE;
+
+				
+				Calendar cl = Calendar.getInstance();
+				int month = cl.get(Calendar.MONTH)+1;
+				int year = cl.get(Calendar.YEAR);
+				String monthStr =getPara("month");
+				String yearStr = getPara("year");
+				if(monthStr != null && !"".equals(yearStr)){
+					month = Integer.valueOf(monthStr);
+				}
+				if(yearStr != null && !"".equals(yearStr)){
+					year = Integer.valueOf(yearStr);
+				}
+				
+				String pageStr = getPara("page");
+				String limitStr= getPara("limit");
+				if(pageStr!=null){
+					page = Integer.valueOf(pageStr);
+				}
+				
+				if(limitStr!=null){
+					limit = Integer.valueOf(limitStr);
+				}
+				String keyword = getPara("keyword");
+				String username =  getPara("username");
+				if(username == null){
+					username = "";
+				}
+				
+				if(keyword == null){
+					keyword = "";
+				}
+				    Page<Record>page_list = MonthModel.dao.getAuditReportList(page, limit, keyword, year, month, org_id,username);
+					map.put("data", page_list);
+				    map.put("code", ConstsObject.SUCCESS_CODE);
+		   	        map.put("msg", ConstsObject.SEARCH_SUCCESS_MSG);
+		   		    renderJson(map);
+			}
+		
+	}
+	
 	
 	//删除月报
 	public void delReport(){
 		 Map<String,Object> map = new HashedMap();
-		String month_id = getPara("month_id");
+		String month_id = getPara("report_id");
 		if(month_id!=null && !"".equals(month_id)){
 			int mon_id =Integer.valueOf(month_id);
 			boolean flag = MonthModel.dao.delMonth(mon_id);

@@ -1,5 +1,7 @@
 package com.trunko.web.controller.project;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -19,6 +21,8 @@ import com.jfinal.plugin.activerecord.Record;
 import com.trunko.anoation.CrossOrigin;
 import com.trunko.common.ConstsObject;
 import com.trunko.utils.SmsClientAccessTool;
+import com.trunko.web.dao.auditlog.AuditModel;
+import com.trunko.web.dao.month.MonthModel;
 import com.trunko.web.dao.project.ProjectDefineModel;
 import com.trunko.web.dao.project.ProjectModel;
 import com.trunko.web.dao.project.ProjectPlanDefModel;
@@ -131,6 +135,32 @@ public class ProjectController extends Controller {
 	    		   
 	    	   }
 	    	   
+	    	   
+	    	      if("待审核".equals(auditState)){
+	    	    	  //启动平台审核流程
+	    	    	  String returnResult = SmsClientAccessTool.getInstance().doAccessHTTPGet("http://192.168.1.15:8082/fast/public/api/Acapi/acMethod?ackey=c322d0339-98ea-4045-94d6-94b7cbfe3ba2&jlid="+pro_id+
+	   	    			   
+	   	    			   "&userName="+URLEncoder.encode(jo.getString("pro_username"), "UTF-8")+
+	   	    			   "&condition="+URLEncoder.encode(industry.getString(0), "UTF-8")+
+	   	    			   "&Method=appAc/qdAc&org_id="+jo.get("pro_org_id")+
+	   	    			   "&ident=project", "UTF-8");
+	    	    	  System.out.println("返回结果:"+returnResult);
+	    	    	  JSONObject result = JSONObject.fromObject(returnResult);
+	    	    	  String proc_id = result.getString("ID_");
+	    	    	  String proc_inst_id = result.getString("PROC_INST_ID_");
+	    	    	  String audit_user = result.getString("ASSIGNEE_");
+	   	    	      Record p = new Record();
+	   	    	      p.set("pro_id", pro_id).set("pro_proc_id", proc_id).set("pro_proc_inst_id", proc_inst_id).set("pro_audit_user", audit_user);
+	    	    	  boolean f = ProjectModel.dao.updateProject(p);
+	    	    	  if(f){
+	    	    		  Record audit_log  =  new Record();
+	    	    		  audit_log.set("proId", pro_id).set("auditType", 1).set("auditResult", "启动审核 流程,等待"+audit_user+"审核");
+	    	    		  AuditModel.dao.saveAudit(audit_log);
+	    	    		  
+	    	    	  }
+	    	    	  
+	    	      }
+	    	      
 	       }
 		} catch (Exception e) {
 			
@@ -349,8 +379,34 @@ public class ProjectController extends Controller {
 	    		   
 	    	   }
 	    	   
-/*	    	   SmsClientAccessTool.getInstance().doAccessHTTPPost("url",
-	    			   "account=" + URLEncoder.encode("一个大肥人", "UTF-8"), "UTF-8");*/
+	    	      if("待审核".equals(auditState)){
+	    	    	 int id = project.getInt("pro_id");
+	    	    	 Record p = ProjectModel.dao.getProjectById(id);
+	    	    	  //启动平台审核流程
+	    	    	  String returnResult = SmsClientAccessTool.getInstance().doAccessHTTPGet("http://192.168.1.15:8082/fast/public/api/Acapi/acMethod?ackey=c322d0339-98ea-4045-94d6-94b7cbfe3ba2&jlid="+ id+
+	   	  
+	   	    			   "&userName="+URLEncoder.encode(p.getStr("pro_username"), "UTF-8")+
+	   	    			   "&condition="+URLEncoder.encode(industry.getString(0), "UTF-8")+
+	   	    			   "&Method=appAc/qdAc&org_id="+p.get("pro_org_id")+
+	   	    			   "&ident=project", "UTF-8");
+	    	    	  System.out.println("返回结果:"+returnResult);
+	    	    	  JSONObject result = JSONObject.fromObject(returnResult);
+	    	    	  String proc_id = result.getString("ID_");
+	    	    	  String proc_inst_id = result.getString("PROC_INST_ID_");
+	    	    	  String audit_user = result.getString("ASSIGNEE_");
+	   	    	      Record pp = new Record();
+	   	    	      p.set("pro_id", id).set("pro_proc_id", proc_id).set("pro_proc_inst_id", proc_inst_id).set("pro_audit_user", audit_user);
+	    	    	  boolean f = ProjectModel.dao.updateProject(pp);
+	    	    	  
+	    	    	  if(f){
+	    	    		  Record audit_log  =  new Record();
+	    	    		  audit_log.set("proId", id).set("auditType", 1).set("auditResult", "启动审核 流程,等待"+audit_user+"审核");
+	    	    		  AuditModel.dao.saveAudit(audit_log);
+	    	    		  
+	    	    	  }
+	    	    	  
+	    	    	  
+	    	      }
 	    	   
 	       }
 		} catch (Exception e) {
@@ -375,6 +431,7 @@ public class ProjectController extends Controller {
     
     //查询项目列表(草稿，管理等列表） 审核列表由国服平台提供
    public void getProjectList(){
+	   
 	   Map<String,Object> map = new HashedMap();
 	   String org_id = getPara("org_id");
 	   System.out.println("查询列表组织ID:"+org_id);
@@ -390,13 +447,13 @@ public class ProjectController extends Controller {
 		   
 		   int pageNo = ConstsObject.PAGE_NO;
 		   String pageNo_str = getPara("page");
-		   if(pageNo_str != null){
+		   if(pageNo_str != null&&!"".equals(pageNo_str)){
 			   pageNo = Integer.valueOf(pageNo_str);
 		   }
 		   
 		   int pageSize = ConstsObject.PAGE_SIZE;
 		   String pageSize_str = getPara("limit");
-		   if(pageSize_str != null){
+		   if(pageSize_str != null&&!"".equals(pageSize_str)){
 			   pageSize = Integer.valueOf(pageSize_str);
 		   }
 		   String keyword = getPara("pro_name");
@@ -539,6 +596,153 @@ public class ProjectController extends Controller {
 	   
    }
     
+   
+   //保存审核
+   public void saveAudit(){
+	   Map<String,Object> map = new HashedMap();
+	  try {
+		  
+		   String formStr = HttpKit.readData(getRequest());
+	       System.out.println("表单字符串:"+formStr);
+	       JSONObject audit = JSONObject.fromObject(formStr);
+	      
+		   String flag = audit.getString("ident_");
+		   String proc_id = audit.getString("ID_");
+		   String proc_inst_id = audit.getString("PROC_INST_ID_");
+		   //项目ID 月报ID
+		   String id = audit.getString("jlid");
+		   String username = audit.getString("userName");
+		   String opinion = audit.getString("opinion");
+		   String msg = audit.getString("msg");
+		   String condition = audit.getString("condition");
+		   String departId = audit.getString("org_id");
+		   
+		   if(opinion == null){
+			   opinion = "";
+		   }
+		   
+		   		   
+		   
+		   String returnResult = SmsClientAccessTool.getInstance().doAccessHTTPGet("http://192.168.1.15:8082/fast/public/api/Acapi/acMethod?ident="+flag+
+	   			   "&userName="+URLEncoder.encode(username, "UTF-8")+
+	   			   "&ID_="+proc_id+
+	   			   "&PROC_INST_ID_="+proc_inst_id+
+	   			   "&jlid="+id+
+	   			   "&opinion="+URLEncoder.encode(opinion, "UTF-8")+
+	   			   "&msg="+msg+
+	   			   "&condition="+URLEncoder.encode(condition, "UTF-8")+
+	   			   "&Method=apptutask/handle"+
+	   			   "&org_id="+departId, "UTF-8");
+	    	  System.out.println("返回结果:"+returnResult);
+		   JSONObject jp =  JSONObject.fromObject(returnResult);
+		   int code = jp.getInt("code");
+		   
+		   
+		   if(code == 200){
+			   String return_msg = jp.getString("msg");
+			   String prc_id = jp.getString("ID_");
+			 
+			   //下一步审核人
+			   String prc_assignee = jp.getString("ASSIGNEE_");
+			   String auditState = "待审核";
+			   //成功发送到审核平台 返回后  更新项目 或者月报审核状态  保存到 审核日志表中
+			   Record audit_log = new Record();
+			   if("结束".equals(return_msg)){
+				   auditState = "审核通过";
+			   }
+			   
+			   if("审核不通过".equals(condition)){
+				   auditState = "审核不通过";
+			   }
+			   
+			   Record obj = new Record();
+			   boolean saveflag = false;
+			   
+			   if("project".equals(flag)){
+				   obj.set("pro_id", id);
+				   obj.set("pro_audit_state",auditState);
+				    audit_log.set("proId",id); 
+				    audit_log.set("auditType", 1);
+				   
+				   if("审核不通过".equals(auditState)){
+					   //清空项目中的流程信息
+					   obj.set("pro_proc_id", "");
+					   obj.set("pro_proc_inst_id", "");
+					   obj.set("pro_audit_user", "");
+					   audit_log.set("auditResult","审不核通过");
+				   }else if("审核通过".equals(auditState)){
+					   audit_log.set("auditResult","审核通过");
+				   }else{
+					   //审核中
+					   obj.set("pro_proc_id", prc_id);
+					  
+					   obj.set("pro_audit_user", prc_assignee);
+					   audit_log.set("auditResult","待"+prc_assignee+"审核");
+				   }
+				   saveflag = ProjectModel.dao.updateProject(obj);
+				   
+			   }else{
+				   obj.set("report_id", id);
+				   obj.set("report_state",auditState);
+				   audit_log.set("monId",id); 
+				   audit_log.set("auditType", 2);
+				   
+				   if("审核不通过".equals(auditState)){
+					 //清空月报中的流程信息
+					   obj.set("report_proc_id", "");
+					   obj.set("report_proc_inst_id", "");
+					   obj.set("report_audit_user", "");
+					   audit_log.set("auditResult","审不核通过");
+				   }else if("审核通过".equals(auditState)){
+					   audit_log.set("auditResult","审核通过");
+				   }else{
+					   //审核中
+					   obj.set("report_proc_id", prc_id);
+					
+					   obj.set("report_audit_user", prc_assignee);
+					   audit_log.set("auditResult","待"+prc_assignee+"审核");
+				   }
+				   saveflag = MonthModel.dao.updateMonth(obj);
+			   }
+			   
+			   audit_log.set("auditOpinion", opinion);
+			   audit_log.set("auditUsername",username);
+			   audit_log.set("auditTime",new Date());
+			   
+			   if(saveflag){
+				   AuditModel.dao.saveAudit(audit_log); 
+				   map.put("code", ConstsObject.SUCCESS_CODE);
+			       map.put("msg", "审核成功");
+		 		   renderJson(map); 
+				   
+			   }else{
+				   
+				   map.put("code", ConstsObject.ERROR_CODE);
+			       map.put("msg", "审核失败");
+		 		   renderJson(map);
+				   
+			   }
+			  
+			  
+			   
+		   }
+		   
+	} catch (Exception e) {
+		//如果不写这段代码 由于 捕获了异常   异常拦截器不会将 错误记录到错误日志中  所以 在这里需要手动 记录到日志
+        StringBuilder sb =new StringBuilder("\n---Exception Log Begin---\n");
+        sb.append("Exception Type:").append(e.getClass().getName()).append("\n");
+        sb.append("Exception Details:");
+        log.error(sb.toString(),e);
+        map.put("code", ConstsObject.ERROR_CODE);
+        map.put("msg", "审核失败");
+		renderJson(map);
+		return;
+		
+	}
+
+
+	   
+   }
 
 
 }

@@ -42,11 +42,8 @@ public class ProjectModel extends Model<Model> {
 		String from_sql = "from tb_project where 1=1 and pro_year =? and pro_org_id =? ";
 		list.add(year);
 		list.add(org_id);
-/*		if(!"".equals(username)){
-			from_sql += " and pro_username = ? ";
-			list.add(username);
-		}
-		*/
+
+		
 		if(!"".equals(keyword)){
 			from_sql += "  and pro_name like '%"+keyword+"%' ";
 		}
@@ -83,8 +80,17 @@ public class ProjectModel extends Model<Model> {
 				list.add(username);
 		
 		}else if("reported".equals(flag)){
+			
+			   if(!"".equals(username)){
+					from_sql += " and pro_username = ? ";
+					list.add(username);
+				}
+			
 			//当前用户已上报项目
-			from_sql += " and pro_username = ? and pro_audit_state !='未上报' and pro_audit_state !='已删除' ";
+			from_sql += "  and pro_audit_state !='未上报' and pro_audit_state !='已删除' ";
+			
+		}else if("audit".equals(flag)){
+			from_sql += " and pro_audit_user = ? and pro_audit_state ='待审核' ";
 			list.add(username);
 			
 		}else{
@@ -94,7 +100,7 @@ public class ProjectModel extends Model<Model> {
 		}
 		
 		from_sql +=" order by pro_id desc";
-		return  Db.paginate(page, pageSize, "select pro_id,pro_name,pro_year,pro_audit_state,pro_investment,pro_industry,pro_subsectors ", from_sql, list.toArray());
+		return  Db.paginate(page, pageSize, "select pro_id,pro_proc_id,pro_proc_inst_id,pro_audit_user,pro_name,pro_year,pro_audit_state,pro_investment,pro_industry,pro_subsectors ", from_sql, list.toArray());
 
 
 		

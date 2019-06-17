@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.jfinal.plugin.activerecord.Db;
 import com.jfinal.plugin.activerecord.Model;
+import com.jfinal.plugin.activerecord.Page;
 import com.jfinal.plugin.activerecord.Record;
 /**
  * 短信模型
@@ -18,9 +19,15 @@ public class SmsModel extends Model<SmsModel>{
 		return Db.save("tb_msg", "msg_id", msg);
 		
 	}
-	public List<Record>getMsgList(String org_id){
-		String sql = "select * from tb_msg where msg_org_id = ?";
-		return Db.find(sql, org_id);
+	public Page<Record>getMsgList(String org_id,int pageNumber,int pageSize,String keyword){
+		
+		String sql = "select *  ";
+		String fromSql = " from tb_msg where msg_org_id = ? ";
+		if(!"".equals(keyword)){
+			fromSql+=" and send_content like '%"+keyword+"%' ";
+		}
+		
+		return Db.paginate(pageNumber, pageSize, sql, fromSql,org_id);
 	}
 	
 	public Record getMsg(int msg_id){

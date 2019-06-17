@@ -1,6 +1,7 @@
 package com.trunko.web.controller.info;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -12,6 +13,7 @@ import org.apache.log4j.Logger;
 
 import com.jfinal.core.Controller;
 import com.jfinal.kit.HttpKit;
+import com.jfinal.plugin.activerecord.Page;
 import com.jfinal.plugin.activerecord.Record;
 import com.trunko.anoation.CrossOrigin;
 import com.trunko.common.ConstsObject;
@@ -36,7 +38,8 @@ public class InfoController extends Controller{
 			info.set("info_title", jo.get("info_title"))
 			.set("info_content",jo.get("info_content"))
 			.set("info_type",jo.get("info_type"))
-			.set("info_org_id",jo.get("info_org_id"));
+			.set("info_org_id",jo.get("org_id"))
+			.set("info_time",jo.get("info_time"));
 			boolean flag = InfoModel.dao.saveInfo(info);
 			
 			if(flag){
@@ -77,6 +80,54 @@ public class InfoController extends Controller{
 		}
 	    
 	}
+	
+	//获取信息列表
+	public void getInfoList(){
+		  Map<String,Object> map = new HashedMap();
+		  String org_id = getPara("org_id");
+		  if(org_id!=null){
+				int page = ConstsObject.PAGE_NO;
+				int pageSize = ConstsObject.PAGE_SIZE;
+				String keyword = getPara("keyword");
+				String info_type = getPara("info_type");
+				String start_date = getPara("start_date");
+				String end_date = getPara("end_date");
+				String pageStr = getPara("page");
+				String pageSizeStr = getPara("limit");
+				 
+				if(keyword == null){
+					keyword = "";
+				}
+				if(info_type == null){
+					info_type = "";
+				}
+				if(start_date == null){
+					start_date = "";
+				}
+				if(end_date == null){
+					end_date = "";
+				}
+				if(pageStr!= null&&!"".equals(pageStr)){
+					page = Integer.valueOf(pageStr);
+				}
+				if(pageSizeStr!= null&&!"".equals(pageSizeStr)){
+					
+					pageSize = Integer.valueOf(pageSizeStr);
+				}
+				
+				Page<Record>pagelist = InfoModel.dao.getInfoList(page, pageSize, keyword, start_date, end_date);
+				map.put("data", pagelist);
+			    map.put("code", ConstsObject.SUCCESS_CODE);
+			    map.put("msg", ConstsObject.SEARCH_SUCCESS_MSG);
+				renderJson(map);
+		  }else{
+			   map.put("code", ConstsObject.ERROR_CODE);
+	 	       map.put("msg",  ConstsObject.SEARCH_ERROR_MSG);
+	  		   renderJson(map);
+		  }
+	
+	}
+	
 	
 	public void getInfo(){
 		 Map<String,Object> map = new HashedMap();
@@ -169,7 +220,7 @@ public class InfoController extends Controller{
 		     renderJson(map);
 		}
 		
-		
+	
 	}
 	
 	

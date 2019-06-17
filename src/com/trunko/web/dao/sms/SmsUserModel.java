@@ -20,7 +20,7 @@ public class SmsUserModel extends Model<SmsUserModel>{
 	
 
 	public List<Record>getRecUserlist(int msg_id){
-		return Db.find("select user_name from tb_msg_user where msg_pid =?", msg_id);
+		return Db.find("select user_name,user_mobile from tb_msg_user where msg_pid =?", msg_id);
 	}
 	
 	

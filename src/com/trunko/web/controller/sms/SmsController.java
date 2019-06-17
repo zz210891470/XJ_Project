@@ -12,10 +12,12 @@ import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
 
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import com.jfinal.core.Controller;
 import com.jfinal.kit.HttpKit;
+import com.jfinal.plugin.activerecord.Page;
 import com.jfinal.plugin.activerecord.Record;
 import com.trunko.anoation.CrossOrigin;
 import com.trunko.common.ConstsObject;
@@ -33,16 +35,27 @@ public class SmsController extends Controller{
 	private static final  Logger log = Logger.getLogger(SmsController.class);
 	
 	public void sendMsg(){
-		
+/*		   JSONArray  users = jo.getJSONArray("receive_users");
+		   JSONArray  phones = jo.getJSONArray("receive_mobiles");
+		   System.out.println("电话字符串"+phones.toString());
+		   List<Record>user_list = new ArrayList<Record>();
+			 for (int i = 0; i < users.size(); i++) {
+				Record u = new Record();
+				u.set("msg_pid", msg_id);
+				u.set("user_name", users.get(i));
+				u.set("user_mobile", phones.get(i));
+				user_list.add(u);
+			}*/
+			    
 	       Map<String,Object> map = new HashedMap();
 	       String formStr = HttpKit.readData(getRequest());
+	       System.out.println("短信表单:"+formStr);
 	       JSONObject jo = JSONObject.fromObject(formStr);
 		   String send_username = jo.getString("send_username");
 		   String receive_users = jo.getString("receive_users");
 		   String receive_mobiles = jo.getString("receive_mobiles");
 		   String send_content = jo.getString("send_content");
-		   String send_time = jo.getString("send_time");
-		   String org_id = jo.getString("msg_org_id");
+		   String org_id = jo.getString("org_id");
 		   //发送短信
 		   String msg = SmsUtils.sendMsg(receive_mobiles, send_content);
 			 Document doc;
@@ -51,32 +64,33 @@ public class SmsController extends Controller{
 					 Element root =doc.getRootElement();
 					 String result = root.elementText("returnstatus");
 					 
-					 if("Success".equals(result)){
-						 Record  sms = new Record();
-						 sms.set("send_username", send_username);
-						 sms.set("send_content", send_content);
-						 sms.set("send_time", send_time);
-						 sms.set("msg_org_id",org_id);
-						 boolean flag = SmsModel.dao.saveMsg(sms);
-						 if(flag){
-							 int msg_id = sms.getInt("msg_id");
-							 String[] users = receive_users.split(",");
-							 String [] phones = receive_mobiles.split(",");
-							 List<Record>user_list = new ArrayList<Record>();
-							 for (int i = 0; i < users.length; i++) {
-								Record u = new Record();
-								u.set("msg_pid", msg_id);
-								u.set("user_name", users[i]);
-								u.set("user_mobile", phones[i]);
-								user_list.add(u);
-							}
-							 
-							 
-							 if(user_list.size()>0){
-								 //保存接收用户
-								 SmsUserModel.dao.saveReceiveUsers(user_list); 
-							 }
+					 Record  sms = new Record();
+					 sms.set("send_username", send_username);
+					 sms.set("send_content", send_content);
+					 sms.set("send_time", new Date());
+					 sms.set("msg_org_id",org_id);
+					 boolean flag = SmsModel.dao.saveMsg(sms);
+					 if(flag){
+						 int msg_id = sms.getInt("msg_id");
+						 String[] users = receive_users.split(",");
+						 String [] phones = receive_mobiles.split(",");
+						 List<Record>user_list = new ArrayList<Record>();
+						 for (int i = 0; i < users.length; i++) {
+							Record u = new Record();
+							u.set("msg_pid", msg_id);
+							u.set("user_name", users[i]);
+							u.set("user_mobile", phones[i]);
+							user_list.add(u);
+						}
+						 
+						 
+						 if(user_list.size()>0){
+							 //保存接收用户
+							 SmsUserModel.dao.saveReceiveUsers(user_list); 
 						 }
+					 }
+					 
+					 if("Success".equals(result)){
 						 map.put("code", ConstsObject.SUCCESS_CODE);
 			    		 map.put("msg", ConstsObject.SEND_SUCCESS_MSG);
 			    		 renderJson(map);
@@ -107,8 +121,25 @@ public class SmsController extends Controller{
 			String org_id = getPara("org_id");
 			
 			if(org_id != null&&!"".equals(org_id)){
-				List<Record>msglist= SmsModel.dao.getMsgList(org_id);
-				map.put("msg_list",msglist);
+				
+				   int pageNo = ConstsObject.PAGE_NO;
+				   String pageNo_str = getPara("page");
+				   if(pageNo_str != null&&!"".equals(pageNo_str)){
+					   pageNo = Integer.valueOf(pageNo_str);
+				   }
+				   
+				   int pageSize = ConstsObject.PAGE_SIZE;
+				   String pageSize_str = getPara("limit");
+				   if(pageSize_str != null&&!"".equals(pageSize_str)){
+					   pageSize = Integer.valueOf(pageSize_str);
+				   }
+				String keyword = getPara("keyword");
+				 if(keyword == null){
+					 keyword = "";
+				 }
+				
+				Page<Record>msglist= SmsModel.dao.getMsgList(org_id, pageNo, pageSize,keyword);
+				map.put("data",msglist);
 		        map.put("code", ConstsObject.SUCCESS_CODE);
 		        map.put("msg", ConstsObject.SEARCH_SUCCESS_MSG);
 				renderJson(map);
@@ -144,10 +175,10 @@ public class SmsController extends Controller{
 		    int msg_id = Integer.valueOf(ms_id);
 		    Record msg = SmsModel.dao.getMsg(msg_id);
 		    List<Record>rec_userlist = SmsUserModel.dao.getRecUserlist(msg_id);
-		    map.put("msgs", msg);
-		    map.put("users", rec_userlist);
+		    Record r = new Record();
+		    r.set("msgs", msg).set("users",rec_userlist);
+		    map.put("data", r);
 		    map.put("code", ConstsObject.SUCCESS_CODE);
-	        map.put("code", ConstsObject.SUCCESS_CODE);
 	        map.put("msg", ConstsObject.SEARCH_SUCCESS_MSG);
 			renderJson(map);
 			

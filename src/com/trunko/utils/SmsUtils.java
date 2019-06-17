@@ -10,7 +10,8 @@ public class SmsUtils {
 	public static String userid = PropKit.get("smsuserid");
 	public static String account = PropKit.get("smsaccount");
 	public static String password = PropKit.get("smspassword");
-
+	public static String smssuffix = PropKit.get("smssuffix");
+	
    
 	public static String keyword(String checkWork) {
 
@@ -29,7 +30,7 @@ public class SmsUtils {
 	}
 	
 	public static String sendMsg(String mobiles,String content) {
-		String result = SmsClientSend.sendSms(url, userid, account, password, mobiles, content);
+		String result = SmsClientSend.sendSms(url, userid, account, password, mobiles, smssuffix+content);
 		System.out.println(result);
 		return result;
 	}
