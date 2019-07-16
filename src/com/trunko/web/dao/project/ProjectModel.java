@@ -100,7 +100,7 @@ public class ProjectModel extends Model<Model> {
 		}
 		
 		from_sql +=" order by pro_id desc";
-		return  Db.paginate(page, pageSize, "select pro_id,pro_proc_id,pro_proc_inst_id,pro_audit_user,pro_name,pro_year,pro_audit_state,pro_investment,pro_industry,pro_subsectors ", from_sql, list.toArray());
+		return  Db.paginate(page, pageSize, "select pro_id,pro_proc_id,pro_proc_inst_id,pro_audit_user,pro_name,pro_year,pro_audit_state,pro_investment,pro_industry,pro_subsectors,pro_province,pro_city,pro_county,pro_town ", from_sql, list.toArray());
 
 
 		

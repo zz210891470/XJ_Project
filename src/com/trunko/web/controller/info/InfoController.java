@@ -1,5 +1,6 @@
 package com.trunko.web.controller.info;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -17,6 +18,7 @@ import com.jfinal.plugin.activerecord.Page;
 import com.jfinal.plugin.activerecord.Record;
 import com.trunko.anoation.CrossOrigin;
 import com.trunko.common.ConstsObject;
+import com.trunko.web.dao.img.ImageModel;
 import com.trunko.web.dao.info.InfoModel;
 import com.trunko.web.dao.info.InfoUserModel;
 /**
@@ -40,21 +42,28 @@ public class InfoController extends Controller{
 			.set("info_type",jo.get("info_type"))
 			.set("info_org_id",jo.get("org_id"))
 			.set("info_time",jo.get("info_time"));
-			boolean flag = InfoModel.dao.saveInfo(info);
+			
+			 boolean flag = InfoModel.dao.saveInfo(info);
 			
 			if(flag){
-				JSONArray ja = jo.getJSONArray("org_user");
-				List<Record>user_list = new ArrayList<Record>();
-				for (int i = 0; i < ja.size(); i++) {
-					Record user = new Record();
-					user.set("info_pid", info.get("info_id"));
-					user.set("info_username", ja.get(i));
-					user_list.add(user);
-				}
-				
-				if(user_list.size()>0){
-					InfoUserModel.dao.saveUsers(user_list);
-				}
+				 JSONArray img_ja =(JSONArray) jo.get("img_arr");
+			      //保存图片
+	    	      if(img_ja.size()>0){
+	    	    	  List<Record>imglist = new ArrayList<Record>();
+	    	    	  for (int i = 0; i < img_ja.size(); i++) {
+	    	    		  JSONObject j =  img_ja.getJSONObject(i);
+	    	    		  Record im = new Record();
+	    	    		  im.set("imgPid", info.get("info_id"));
+	    	    		  im.set("imgUrl", j.getString("url"));
+	    	    		  im.set("imgName", j.getString("filename"));
+	    	    		  im.set("imgType", "消息类型");
+	    	    	
+	    	    		  imglist.add(im);
+					}
+	    	    	  ImageModel.dao.batchSaveImgs(imglist);
+	    	    	 
+	    	      }
+
 				    map.put("data",info.get("info_id")); //上传附件 使用
 				    map.put("code", ConstsObject.SUCCESS_CODE);
 			        map.put("msg", ConstsObject.SAVE_SUCCESS_MSG);
@@ -95,7 +104,7 @@ public class InfoController extends Controller{
 				String pageStr = getPara("page");
 				String pageSizeStr = getPara("limit");
 				 
-				if(keyword == null){
+				if(keyword == null||"".endsWith(keyword)){
 					keyword = "";
 				}
 				if(info_type == null){
@@ -114,8 +123,11 @@ public class InfoController extends Controller{
 					
 					pageSize = Integer.valueOf(pageSizeStr);
 				}
+				if(info_type == null){
+					info_type = "";
+				}
 				
-				Page<Record>pagelist = InfoModel.dao.getInfoList(page, pageSize, keyword, start_date, end_date);
+				Page<Record>pagelist = InfoModel.dao.getInfoList(page, pageSize, keyword, start_date, end_date,org_id,info_type);
 				map.put("data", pagelist);
 			    map.put("code", ConstsObject.SUCCESS_CODE);
 			    map.put("msg", ConstsObject.SEARCH_SUCCESS_MSG);
@@ -135,9 +147,15 @@ public class InfoController extends Controller{
 		if(info_id != null && !"".equals(info_id)){
 			int id = Integer.valueOf(info_id); 
 			Record info = InfoModel.dao.getInfo(id);
-			List<Record>rec_user = InfoUserModel.dao.getUsers(id);
-			map.put("info",info);
-			map.put("users",rec_user);
+			List<Record>imgs = ImageModel.dao.getImglist(id,"消息类型");
+			info.set("img_arr", imgs);
+/*			List<Record>rec_user = InfoUserModel.dao.getUsers(id);
+			List<String>users = new ArrayList<String>();
+			for(int i =0 ;i <rec_user.size();i++){
+				users.add(rec_user.get(i).getStr("info_username"));
+			}*/
+			//info.set("org_user",users);
+			map.put("data",info);
 	        map.put("code", ConstsObject.SUCCESS_CODE);
 	        map.put("msg", ConstsObject.SEARCH_SUCCESS_MSG);
 			renderJson(map);
@@ -166,19 +184,42 @@ public class InfoController extends Controller{
 			.set("info_id", info_id);
 			boolean flag = InfoModel.dao.updateInfo(info);
 			if(flag){
-				JSONArray ja = jo.getJSONArray("org_user");
-				List<Record>user_list = new ArrayList<Record>();
-				for (int i = 0; i < ja.size(); i++) {
-					Record user = new Record();
-					JSONObject j = ja.getJSONObject(i);
-					user.set("info_username",j.getString("user_name") );
-					user.set("info_user_id",j.getString("user_id") );
-					user_list.add(user);
-				}
 				
-				if(user_list.size()>0){
-					InfoUserModel.dao.updateUsers(user_list);
-				}
+	    	      JSONArray img_ja = jo.getJSONArray("img_arr");
+	    	      //保存图片
+	    	      if(img_ja.size()>0){
+	    	    	  //删除旧图片
+	    	    	  ImageModel.dao.deleteImgs(Integer.valueOf(info_id),"消息类型");
+	    	    	  //删除硬盘图片
+	    	    	  List<Record>oldImgs = ImageModel.dao.getImglist(Integer.valueOf(info_id),"消息类型");
+	    	    	  for (int i = 0; i < oldImgs.size(); i++) {
+	    	    		  String url = oldImgs.get(i).getStr("url");
+	    	    		  int idx = url.indexOf("upload/");
+	    	    		  String imgurl = url.substring(idx+7);
+	    	    		  
+	    	    			String path = getRequest().getSession().getServletContext().getRealPath("/upload/"+imgurl);
+	    	    			System.out.println("删除路径:"+path);
+	    	    			File file = new File(path);
+	    	    			System.out.println(file);
+	    	    			if (file.exists() && file.isFile()){
+	    	    				  file.delete();
+	    	    			}
+	    	    			
+					   }
+	    	    	  
+	    	    	  List<Record>imglist = new ArrayList<Record>();
+	    	    	  for (int i = 0; i < img_ja.size(); i++) {
+	    	    		  JSONObject j =  img_ja.getJSONObject(i);
+	    	    		  Record im = new Record();
+	    	    		  im.set("imgPid", Integer.valueOf(info_id));
+	    	    		  im.set("imgUrl", j.getString("url"));
+	    	    		  im.set("imgName", j.getString("filename"));
+	    	    		  im.set("imgType", "消息类型");
+	    	    		  imglist.add(im);
+					}
+	    	    	  ImageModel.dao.batchSaveImgs(imglist);
+	    	    	 
+	    	      }
 				
 				 map.put("data",info_id);
 				 map.put("code", ConstsObject.SUCCESS_CODE);
@@ -221,6 +262,21 @@ public class InfoController extends Controller{
 		}
 		
 	
+	}
+	
+	//获取首页信息列表
+	public void getIndexInfoList(){	
+		String org_id = getPara("org_id");
+		Map<String,Object> map = new HashedMap();
+		if(org_id!=null&&!"".equals(org_id)){
+			List<Record>list = InfoModel.dao.getIndexInfoList(org_id);
+			renderJson(list);
+		}else{
+		  	 map.put("code", ConstsObject.ERROR_CODE);
+		     map.put("msg","无权限访问");
+		     renderJson(map);
+		}
+		
 	}
 	
 	

@@ -22,7 +22,7 @@ public class SmsModel extends Model<SmsModel>{
 	public Page<Record>getMsgList(String org_id,int pageNumber,int pageSize,String keyword){
 		
 		String sql = "select *  ";
-		String fromSql = " from tb_msg where msg_org_id = ? ";
+		String fromSql = " from tb_msg  where msg_org_id = ? ";
 		if(!"".equals(keyword)){
 			fromSql+=" and send_content like '%"+keyword+"%' ";
 		}

@@ -27,7 +27,7 @@ public class InfoUserModel extends Model<InfoUserModel>{
 	}
 	
 	public List<Record> getUsers(int id){
-		return Db.find("select * from tb_info_user where info_pid = ?", id);
+		return Db.find("select info_username from tb_info_user where info_pid = ?", id);
 	}
 	
 	public int delUsers(int info_id){

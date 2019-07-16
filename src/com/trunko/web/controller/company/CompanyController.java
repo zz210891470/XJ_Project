@@ -192,7 +192,7 @@ public class CompanyController extends Controller {
 	    	   
 	    	   boolean flag = CompanyModel.dao.delCompany(Integer.valueOf(comp_id));
 	    	   if(flag){
-	    		    map.put("code", ConstsObject.ERROR_CODE);
+	    		    map.put("code", ConstsObject.SUCCESS_CODE);
 	 		        map.put("msg", ConstsObject.DEL_SUCCESS_MSG);
 	 				renderJson(map);
 	    	   }else{

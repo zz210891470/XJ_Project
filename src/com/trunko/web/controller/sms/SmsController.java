@@ -51,25 +51,53 @@ public class SmsController extends Controller{
 	       String formStr = HttpKit.readData(getRequest());
 	       System.out.println("短信表单:"+formStr);
 	       JSONObject jo = JSONObject.fromObject(formStr);
+	       String send_content = jo.getString("send_content");
 		   String send_username = jo.getString("send_username");
-		   String receive_users = jo.getString("receive_users");
-		   String receive_mobiles = jo.getString("receive_mobiles");
-		   String send_content = jo.getString("send_content");
+		   
+		   String receive_users = "";
+		   String receive_mobiles = "";
+		  
+		   JSONArray user_arr = jo.getJSONArray("receive_users");
+		   for(int i = 0; i < user_arr.size();i++){
+			   JSONObject j = (JSONObject) user_arr.get(i);
+			  if(i == user_arr.size()-1){
+				  receive_mobiles+=j.getString("mobile");
+				  receive_users+=j.getString("username");
+			  }else{
+				  receive_mobiles+=j.getString("mobile")+",";
+				  receive_users+=j.getString("username")+",";
+			  }
+		   }
+		   
 		   String org_id = jo.getString("org_id");
 		   //发送短信
-		   String msg = SmsUtils.sendMsg(receive_mobiles, send_content);
+		  // String msg = SmsUtils.sendMsg(receive_mobiles, send_content);
 			 Document doc;
 				try {
-					doc = DocumentHelper.parseText(msg);
-					 Element root =doc.getRootElement();
-					 String result = root.elementText("returnstatus");
+					//doc = DocumentHelper.parseText(msg);
+					// Element root =doc.getRootElement();
+					// String result = root.elementText("returnstatus");
+					 String result = "Success";
 					 
 					 Record  sms = new Record();
+					 if("Success".equals(result)){
+						 sms.set("send_status", "发送成功");
+						 map.put("code", ConstsObject.SUCCESS_CODE);
+			    		 map.put("msg", ConstsObject.SEND_SUCCESS_MSG);
+					 }else{
+						  sms.set("send_status", "发送失败");
+						  map.put("code", ConstsObject.ERROR_CODE);
+			    		  map.put("msg", ConstsObject.SEND_ERROR_MSG);
+			    		
+					 }
+
+					
 					 sms.set("send_username", send_username);
 					 sms.set("send_content", send_content);
 					 sms.set("send_time", new Date());
 					 sms.set("msg_org_id",org_id);
 					 boolean flag = SmsModel.dao.saveMsg(sms);
+					 
 					 if(flag){
 						 int msg_id = sms.getInt("msg_id");
 						 String[] users = receive_users.split(",");
@@ -90,17 +118,8 @@ public class SmsController extends Controller{
 						 }
 					 }
 					 
-					 if("Success".equals(result)){
-						 map.put("code", ConstsObject.SUCCESS_CODE);
-			    		 map.put("msg", ConstsObject.SEND_SUCCESS_MSG);
-			    		 renderJson(map);
-					 }else{
-						  map.put("code", ConstsObject.ERROR_CODE);
-			    		  map.put("msg", ConstsObject.SEND_ERROR_MSG);
-			    		  renderJson(map);
-					 }
 
-				} catch (DocumentException e) {
+				} catch (Exception e) {
 					//如果不写这段代码 由于 捕获了异常   异常拦截器不会将 错误记录到错误日志中  所以 在这里需要手动 记录到日志
 			        StringBuilder sb =new StringBuilder("\n---Exception Log Begin---\n");
 			        sb.append("Exception Type:").append(e.getClass().getName()).append("\n");
@@ -112,6 +131,8 @@ public class SmsController extends Controller{
 					return;
 					
 				}
+				
+				  renderJson(map);
 	}
 	
 	//获取短信历史记录
@@ -175,9 +196,14 @@ public class SmsController extends Controller{
 		    int msg_id = Integer.valueOf(ms_id);
 		    Record msg = SmsModel.dao.getMsg(msg_id);
 		    List<Record>rec_userlist = SmsUserModel.dao.getRecUserlist(msg_id);
-		    Record r = new Record();
-		    r.set("msgs", msg).set("users",rec_userlist);
-		    map.put("data", r);
+		    List<String>users = new ArrayList<String>();
+		    List<String>phones = new ArrayList<String>();
+		    for(int i =0 ;i <rec_userlist.size();i++){
+				users.add(rec_userlist.get(i).getStr("user_name"));
+				phones.add(rec_userlist.get(i).getStr("user_mobile"));
+			}
+		    msg.set("receive_users", users).set("receive_mobiles", phones);
+		    map.put("data", msg);
 		    map.put("code", ConstsObject.SUCCESS_CODE);
 	        map.put("msg", ConstsObject.SEARCH_SUCCESS_MSG);
 			renderJson(map);
@@ -189,7 +215,7 @@ public class SmsController extends Controller{
 			
 		}
 		
-		
+		 
 	}
 	
 	//删除短信

@@ -46,7 +46,7 @@ public class CompanyModel extends Model<CompanyModel> {
 		String from_sql = "from tb_company   where 1=1  ";
 
 		if (!"".equals(keyword)) {
-			from_sql += " and  p.pro_name like '%" + keyword + "%' ";
+			from_sql += " and comp_name like '%" + keyword + "%' ";
 		}
 
 		return Db.paginate(page, pageSize, "select * ", from_sql);

@@ -1,5 +1,8 @@
 package com.trunko.web.controller.month;
 
+import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -17,10 +20,12 @@ import com.jfinal.core.Controller;
 import com.jfinal.kit.HttpKit;
 import com.jfinal.plugin.activerecord.Page;
 import com.jfinal.plugin.activerecord.Record;
+import com.jfinal.upload.UploadFile;
 import com.trunko.anoation.CrossOrigin;
 import com.trunko.common.ConstsObject;
 import com.trunko.utils.SmsClientAccessTool;
 import com.trunko.web.dao.auditlog.AuditModel;
+import com.trunko.web.dao.img.ImageModel;
 import com.trunko.web.dao.month.MonthDefineModel;
 import com.trunko.web.dao.month.MonthModel;
 import com.trunko.web.dao.project.ProjectDefineModel;
@@ -56,7 +61,7 @@ public class MonthController extends Controller {
 	    	   auditState = "待审核";
 	       }
 	      // end 
-	       
+	      
 	       Record month_record = new Record();
 	       month_record.set("project_id", month.get("project_id")).
 	       set("report_year", month.get("report_year")).set("report_month", month.get("report_month")).
@@ -115,6 +120,24 @@ public class MonthController extends Controller {
 	    	    	  
 	    	      }
 	    	   
+	    	      JSONArray img_ja = month.getJSONArray("img_arr");
+	    	      //保存图片
+	    	      if(img_ja.size()>0){
+	    	    	  List<Record>imglist = new ArrayList<Record>();
+	    	    	  for (int i = 0; i < img_ja.size(); i++) {
+	    	    		  JSONObject j =  img_ja.getJSONObject(i);
+	    	    		  Record im = new Record();
+	    	    		  im.set("imgPid", mon_id);
+	    	    		  im.set("imgUrl", j.getString("url"));
+	    	    		  im.set("imgName", j.getString("filename"));
+	    	    		  im.set("imgType", "月报类型");
+	    	    		  im.set("imgMonth", month.get("report_month"));
+	    	    		  imglist.add(im);
+					}
+	    	    	  ImageModel.dao.batchSaveImgs(imglist);
+	    	    	 
+	    	      }
+	    	      
 	    	   
 	       }
 		} catch (Exception e) {
@@ -163,10 +186,76 @@ public class MonthController extends Controller {
 	    	   auditState = "待审核";
 	    	   month_record.set("report_state", auditState);
 	       }
+	       
+ 	      if("待审核".equals(auditState)){
+	    	  Record pro = MonthModel.dao.getMonthAndProByMonthId(mon_id);
+	    	  String industry = pro.getStr("pro_industry");
+	    	  //启动平台审核流程
+	    	  String returnResult = SmsClientAccessTool.getInstance().doAccessHTTPGet("http://192.168.1.15:8082/fast/public/api/Acapi/acMethod?ackey=c322d0339-98ea-4045-94d6-94b7cbfe3ba2&jlid="+mon_id+
+	    			  
+	    			   "&userName="+URLEncoder.encode(pro.getStr("report_username"), "UTF-8")+
+	    			   "&condition="+URLEncoder.encode(industry, "UTF-8")+
+	    			   "&Method=appAc/qdAc&org_id="+pro.getStr("pro_org_id")+
+	    			   "&ident=month", "UTF-8");
+	    	  System.out.println("返回结果:"+returnResult);
+	    	  JSONObject result = JSONObject.fromObject(returnResult);
+	    	  String proc_id = result.getString("ID_");
+	    	  String proc_inst_id = result.getString("PROC_INST_ID_");
+	    	  String audit_user = result.getString("ASSIGNEE_");
+	    	      Record p = new Record();
+	    	      p.set("report_id", mon_id).set("report_proc_id", proc_id).set("report_proc_inst_id", proc_inst_id).set("report_audit_user", audit_user);
+	    	  boolean f =  MonthModel.dao.updateMonth(p);
+	  	      if(f){
+	    		  Record audit_log  =  new Record();
+	    		  audit_log.set("monId", mon_id).set("auditType", 2).set("auditResult", "启动审核 流程,等待"+audit_user+"审核");
+	    		  AuditModel.dao.saveAudit(audit_log);
+	    		  
+	    	  }
+	      }
+	       
+	       
+ 	      
 	      // end 
 	       boolean flag =  MonthModel.dao.updateMonth(month_record);
 	       if(flag){
 	    	   // 开始保存月报自定义信息
+	    	      JSONArray img_ja = month.getJSONArray("img_arr");
+	    	      //保存图片
+	    	      if(img_ja.size()>0){
+	    	    	  //删除旧图片
+	    	    	  ImageModel.dao.deleteImgs(mon_id,"月报类型");
+	    	    	  //删除硬盘图片
+	    	    	  List<Record>oldImgs = ImageModel.dao.getImglist(mon_id,"月报类型");
+	    	    	  for (int i = 0; i < oldImgs.size(); i++) {
+	    	    		  String url = oldImgs.get(i).getStr("url");
+	    	    		  int idx = url.indexOf("upload/");
+	    	    		  String imgurl = url.substring(idx+7);
+	    	    		  
+	    	    			String path = getRequest().getSession().getServletContext().getRealPath("/upload/"+imgurl);
+	    	    			System.out.println("删除路径:"+path);
+	    	    			File file = new File(path);
+	    	    			System.out.println(file);
+	    	    			if (file.exists() && file.isFile()){
+	    	    				  file.delete();
+	    	    			}
+	    	    			
+					   }
+	    	    	  
+	    	    	  List<Record>imglist = new ArrayList<Record>();
+	    	    	  for (int i = 0; i < img_ja.size(); i++) {
+	    	    		  JSONObject j =  img_ja.getJSONObject(i);
+	    	    		  Record im = new Record();
+	    	    		  im.set("imgPid", mon_id);
+	    	    		  im.set("imgUrl", j.getString("url"));
+	    	    		  im.set("imgName", j.getString("filename"));
+	    	    		  im.set("imgType", "月报类型");
+	    	    		  im.set("imgMonth", month.get("report_month"));
+	    	    		  imglist.add(im);
+					}
+	    	    	  ImageModel.dao.batchSaveImgs(imglist);
+	    	    	 
+	    	      }
+	    	   
 	    	
 	    	  JSONArray ja =(JSONArray) jo.get("month_define");
 	    	  List<Record>list = new ArrayList<Record>();
@@ -188,31 +277,7 @@ public class MonthController extends Controller {
 	    		   
 	    	   }
 	    	   
-	    	      if("待审核".equals(auditState)){
-	    	    	  Record pro = MonthModel.dao.getMonthAndProByMonthId(mon_id);
-	    	    	  String industry = pro.getStr("pro_industry");
-	    	    	  //启动平台审核流程
-	    	    	  String returnResult = SmsClientAccessTool.getInstance().doAccessHTTPGet("http://192.168.1.15:8082/fast/public/api/Acapi/acMethod?ackey=c322d0339-98ea-4045-94d6-94b7cbfe3ba2&jlid="+mon_id+
-	   	    			  
-	   	    			   "&userName="+URLEncoder.encode(pro.getStr("report_username"), "UTF-8")+
-	   	    			   "&condition="+URLEncoder.encode(industry, "UTF-8")+
-	   	    			   "&Method=appAc/qdAc&org_id="+pro.getStr("pro_org_id")+
-	   	    			   "&ident=month", "UTF-8");
-	    	    	  System.out.println("返回结果:"+returnResult);
-	    	    	  JSONObject result = JSONObject.fromObject(returnResult);
-	    	    	  String proc_id = result.getString("ID_");
-	    	    	  String proc_inst_id = result.getString("PROC_INST_ID_");
-	    	    	  String audit_user = result.getString("ASSIGNEE_");
-	   	    	      Record p = new Record();
-	   	    	      p.set("report_id", mon_id).set("report_proc_id", proc_id).set("report_proc_inst_id", proc_inst_id).set("report_audit_user", audit_user);
-	    	    	  boolean f =  MonthModel.dao.updateMonth(p);
-	    	  	      if(f){
-	    	    		  Record audit_log  =  new Record();
-	    	    		  audit_log.set("monId", mon_id).set("auditType", 2).set("auditResult", "启动审核 流程,等待"+audit_user+"审核");
-	    	    		  AuditModel.dao.saveAudit(audit_log);
-	    	    		  
-	    	    	  }
-	    	      }
+	    	   
 	    	   
 	       }
 		} catch (Exception e) {
@@ -233,6 +298,29 @@ public class MonthController extends Controller {
 		
 		
 	}
+	
+	public void delImg() throws UnsupportedEncodingException{
+		 String fileName =getPara("fileName");
+		 String dirName =getPara("dirName");
+		 //图片如果存在/字符可能会存在问题
+		 dirName = dirName.substring(dirName.indexOf("/")+1,dirName.lastIndexOf("/"));
+	   	 String path = getRequest().getSession().getServletContext().getRealPath("/upload/"+dirName);
+	   
+	   	 fileName = URLDecoder.decode(URLDecoder.decode(fileName,"utf-8"),"utf-8");
+	   	 String pro_id = getPara("pro_id");
+	   	 System.out.println("删除文件:"+fileName+"id"+pro_id);
+			File file = new File(path +File.separator+fileName);
+			System.out.println(file);
+			if (file.exists() && file.isFile()){
+				  file.delete();
+			//	 ProjectImg.dao.deleteImg(pro_id, fileName);
+				 renderJson("{\"rtnCode\":\"200\"}");
+			}else{
+				 renderJson("{\"rtnCode\":\"401\"}");
+			}
+			
+			
+		}
 	
 	
 	//获取月报详情
@@ -255,6 +343,9 @@ public class MonthController extends Controller {
 				
 				m.setColumns(def);
 			}
+			
+			List<Record>imgs = ImageModel.dao.getImglist(Integer.valueOf(report_id),"月报类型");
+			m.set("img_arr", imgs);
 			map.put("data", m);
 		    map.put("code", ConstsObject.SUCCESS_CODE);
    	        map.put("msg", ConstsObject.SEARCH_SUCCESS_MSG);
@@ -513,5 +604,11 @@ public class MonthController extends Controller {
 	   }
 	    
 	
+	   public void uploadImgs(){
+		   //getFile()如果里面参数为空前台默认 要传 参数为file的文件才能接收
+		  UploadFile up = getFile();
+		  String name = getPara("name");
+		   renderJson("成功");
+	   }
 
 }

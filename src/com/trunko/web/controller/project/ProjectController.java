@@ -1,6 +1,5 @@
 package com.trunko.web.controller.project;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -395,7 +394,7 @@ public class ProjectController extends Controller {
 	    	    	  String proc_inst_id = result.getString("PROC_INST_ID_");
 	    	    	  String audit_user = result.getString("ASSIGNEE_");
 	   	    	      Record pp = new Record();
-	   	    	      p.set("pro_id", id).set("pro_proc_id", proc_id).set("pro_proc_inst_id", proc_inst_id).set("pro_audit_user", audit_user);
+	   	    	      pp.set("pro_id", id).set("pro_proc_id", proc_id).set("pro_proc_inst_id", proc_inst_id).set("pro_audit_user", audit_user);
 	    	    	  boolean f = ProjectModel.dao.updateProject(pp);
 	    	    	  
 	    	    	  if(f){
@@ -612,16 +611,18 @@ public class ProjectController extends Controller {
 		   //项目ID 月报ID
 		   String id = audit.getString("jlid");
 		   String username = audit.getString("userName");
-		   String opinion = audit.getString("opinion");
+		 
 		   String msg = audit.getString("msg");
 		   String condition = audit.getString("condition");
 		   String departId = audit.getString("org_id");
-		   
-		   if(opinion == null){
+		   String opinion = ""; 
+		   if(audit.get("opinion") == null){
 			   opinion = "";
+		   }else{
+			   opinion = audit.getString("opinion"); 
 		   }
 		   
-		   		   
+		  
 		   
 		   String returnResult = SmsClientAccessTool.getInstance().doAccessHTTPGet("http://192.168.1.15:8082/fast/public/api/Acapi/acMethod?ident="+flag+
 	   			   "&userName="+URLEncoder.encode(username, "UTF-8")+
